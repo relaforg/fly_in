@@ -121,9 +121,28 @@ class MapParser:
 
     def extract(self):
         nb_drones: int | None = None
+        start: Tuple[int, int] | None = None
+        end: Tuple[int, int] | None = None
         for line in self.iter_lines():
             try:
                 field, value = line.split(":")
+                parameters = value.split("[")[0].strip().split()
+                if ("[" in value or "]" in value):
+                    metadata = value[self.find_nth_occurence(
+                        "[", value, 1):].strip()
+                else:
+                    metadata = None
+                if (metadata is not None):
+                    print(metadata)
+                    if (metadata[-1] != "]"):
+                        raise ParsingError(
+                            "Metadata syntax invalid",
+                            ParseContext(
+                                file=self.file_path,
+                                line_no=self.no_line,
+                                line=line,
+                                col=len(line) - 1,
+                            ))
             except ValueError:
                 raise ParsingError(
                     "Syntax Error", ParseContext(
@@ -132,10 +151,51 @@ class MapParser:
                         line=line,
                         col=self.find_nth_occurence(":", line, 2),
                     ))
+            value = value.split()
             if (not nb_drones):
                 if (field != "nb_drones"):
                     raise ParsingError(
                         "The first line must be the number of drone")
-                nb_drones = int(value)
-
-        # return (Map())
+                nb_drones = int(value[0])
+                continue
+            if (field == "start_hub"):
+                if (start is not None):
+                    raise ParsingError(
+                        "You must provide only one start position",
+                        ParseContext(
+                            file=self.file_path,
+                            line_no=self.no_line,
+                            line=line,
+                            col=0,
+                            length=len(field)
+                        ))
+                start = tuple(int(x.strip()) for x in value[1:3])
+            if (field == "end_hub"):
+                if (end is not None):
+                    raise ParsingError(
+                        "You must provide only one end position",
+                        ParseContext(
+                            file=self.file_path,
+                            line_no=self.no_line,
+                            line=line,
+                            col=0,
+                            length=len(field)
+                        ))
+                end = tuple(int(x.strip()) for x in value[1:3])
+            if ("hub" in field):
+                if (len(parameters) != 3):
+                    raise ParsingError(
+                        "Hub parameters are incomplete",
+                        ParseContext(
+                            file=self.file_path,
+                            line_no=self.no_line,
+                            line=line,
+                            col=len(field) + 2,
+                            length=sum([len(x) for x in parameters]
+                                       ) + len(parameters) - 1,
+                            hint="You may have forgotten to open the metadata"
+                            + " bracket."
+                        ))
+                    # opts = [x.split("=") for x in opts[1:-1].split()]
+                    # print(opts)
+                # return (Map())
