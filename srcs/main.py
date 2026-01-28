@@ -2,7 +2,7 @@ from map_parser import MapParser, ParsingError
 from map_display import MapDisplay
 
 if (__name__ == "__main__"):
-    parser = MapParser("maps/medium/01_dead_end_trap.txt")
+    parser = MapParser("maps/easy/02_simple_fork.txt")
     try:
         map = parser.extract()
         print(map)

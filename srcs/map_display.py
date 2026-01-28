@@ -1,4 +1,5 @@
 from map_parser import Map, Hub
+from font_monospace import FONT, FONT_W, FONT_H, NO_CHAR
 from mlx import Mlx
 from typing import Any, Tuple
 
@@ -6,7 +7,7 @@ from typing import Any, Tuple
 class MapDisplay:
     def __init__(self, map: Map):
         self.map = map
-        self.cell_size = 99
+        self.cell_size = 199
         self.offset = (0, 0)
         self.drag_start: Tuple[int, int] | None = None
         self.m = Mlx()
@@ -124,6 +125,8 @@ class MapDisplay:
                 x, y = self._graph_to_img_coord(hub.coord[0], hub.coord[1])
                 color = self._color_to_hex(hub.color)
                 self.put_pixel(x - offset + j, y - offset + i, color)
+        offset_x = len(hub.name) * FONT_W // 2
+        self._put_string(x - offset_x, y - size - FONT_H, hub.name)
 
     def fill_img(self, color: int = 0x000000FF) -> None:
         """Fill an mlx image with color
@@ -138,6 +141,17 @@ class MapDisplay:
             color & 0xFF,
         ))
         self.addr[:] = px * (self.img_width * self.img_height)
+
+    def _put_string(self, x: int, y: int, string: str):
+        for c in range(len(string)):
+            self._put_letter(x + c * FONT_W, y, string[c])
+
+    def _put_letter(self, x: int, y: int, letter: str) -> None:
+        glyph = FONT.get(letter, NO_CHAR)
+        for dy in range(len(glyph)):
+            for dx in range(len(glyph[dy])):
+                if (glyph[dy][dx] != 0):
+                    self.put_pixel(x + dx, y + dy, 0xFFFFFF00 + glyph[dy][dx])
 
     def put_line(self, c1: Tuple[int, int], c2: Tuple[int, int]):
         dx = abs(c2[0] - c1[0])
