@@ -157,8 +157,8 @@ class MapDisplay:
         if (self.modal is not None):
             self.m.mlx_destroy_image(self.mlx, self.modal.img)
             # potential refresh here
-        display: List[str] = [hub.name, "zone_type : " + hub.zone_type,
-                              "max_drones : " + str(hub.max_drones)]
+        display: List[str] = [hub.name, "zone_type: " + hub.zone_type,
+                              "max_drones: " + str(hub.max_drones)]
         drones = [d.id for d in self.drones if d.coord == hub.coord]
         display += drones
         print(display)
