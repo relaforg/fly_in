@@ -38,6 +38,8 @@ class Dijkstra:
                 if (dst not in new):
                     new[dst] = []
                 new[dst].append((src, cost))
+        for hub in new.values():
+            hub.sort(key=lambda c: c[1])
         return (new)
 
     def run(self):
@@ -47,12 +49,11 @@ class Dijkstra:
 
         while (len(queue)):
             current, cost = queue.pop(0)
-            if (current.name in visited):
-                continue
             visited.add(current.name)
             neighboors = self._get_neighboors(current)
             out[current.name] = []
             for h in neighboors:
+                # sauvegarder que si plus petit
                 if (h.name not in visited and self._get_hub_cost(current) > 0):
                     new_cost = cost + self._get_hub_cost(current)
                     out[current.name].append((h.name, new_cost))
