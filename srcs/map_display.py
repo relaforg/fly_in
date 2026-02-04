@@ -1,11 +1,16 @@
-from map_parser import Map, Hub
+from map_parser import Map, Hub, Connection
 from font_monospace import FONT, FONT_W, FONT_H, NO_CHAR
 from mlx import Mlx
-from typing import Any, Tuple, List
+from typing import Any, Tuple, List, Dict, TypedDict
 from drone import Drone
 from time import monotonic
 from copy import deepcopy
 from math import ceil
+
+
+class ConnCoord(TypedDict):
+    coord: tuple[int, int]
+    conn: Connection
 
 
 class Image:
@@ -34,8 +39,10 @@ class MapDisplay:
                          self.graph_size[1] * self.cell_size)
         self.last_click = monotonic()
         self.modal: None | Image = None
-        self.current_hub: Hub | None = None
+        # self.current_hub: Hub | None = None
+        self.current_modal_coord: Tuple[int, int] | None = None
         self.step = 0
+        self.conn_coord: List[ConnCoord] = []
 
     def _compute_graph_info(self):
         min_x = min(self.map.hubs, key=lambda x: x.coord[0]).coord[0]
@@ -121,6 +128,7 @@ class MapDisplay:
         for h in self.map.hubs:
             self.put_hub(h)
         self.put_drones()
+        print(self.conn_coord)
 
     def refresh(self) -> None:
         """Refresh the window to display modification
@@ -130,10 +138,12 @@ class MapDisplay:
         self.m.mlx_clear_window(self.mlx, self.win)
         self.m.mlx_put_image_to_window(self.mlx, self.win, self.img.img, x, y)
         if (self.modal is not None):
-            if (self.current_hub is not None):
-                x, y = self._graph_to_img_coord(self.current_hub.coord[0],
-                                                self.current_hub.coord[1])
-                x, y = self._img_to_win_coord(x, y)
+            # if (self.current_hub is not None):
+            if (self.current_modal_coord is not None):
+                # x, y = self._graph_to_img_coord(self.current_modal_coord[0],
+                #                                 self.current_modal_coord[1])
+                x, y = self._img_to_win_coord(self.current_modal_coord[0],
+                                              self.current_modal_coord[1])
             self.m.mlx_put_image_to_window(
                 self.mlx, self.win, self.modal.img,
                 x - (self.modal.width // 2), y + 10)
@@ -184,9 +194,14 @@ class MapDisplay:
             if (tmp - self.last_click <= 0.3):
                 x1, y1 = self._win_to_img_coord(x, y)
                 h = self.get_hub_double_click(x1, y1)
+                c = self.get_conn_double_click(x1, y1)
                 if (h is not None):
-                    self.current_hub = h
+                    self.current_modal_coord = \
+                        self._graph_to_img_coord(h.coord[0], h.coord[1])
                     self.put_hub_info(h)
+                elif (c is not None):
+                    self.current_modal_coord = c["coord"]
+                    self.put_conn_info(c["conn"])
             self.drag_start = (x, y)
             self.last_click = tmp
         elif (button == 3):
@@ -200,6 +215,13 @@ class MapDisplay:
             x2, y2 = self._graph_to_img_coord(h.coord[0], h.coord[1])
             if (x <= x2 + 5 and x >= x2 - 5 and y <= y2 + 5 and y >= y2 - 5):
                 return (h)
+        return (None)
+
+    def get_conn_double_click(self, x: int, y: int) -> ConnCoord | None:
+        for c in self.conn_coord:
+            x2, y2 = c["coord"]
+            if (x <= x2 + 5 and x >= x2 - 5 and y <= y2 + 5 and y >= y2 - 5):
+                return (c)
         return (None)
 
     def put_hub_info(self, hub: Hub):
@@ -223,6 +245,22 @@ class MapDisplay:
                 x = width // 2 - len(display[i]) * FONT_W // 2
             if (i == 1 or i == 3):
                 y += FONT_H
+            self.put_string(self.modal, x, y, display[i])
+            y += FONT_H
+        self.put_border(self.modal)
+
+    def put_conn_info(self, conn: Connection):
+        if (self.modal is not None):
+            self.m.mlx_destroy_image(self.mlx, self.modal.img)
+            # potential refresh here
+        display: List[str] = [f"max link capacity = {conn.max_link_capacity}"]
+        height = (1) * FONT_H + 15
+        width = (len(max(display, key=lambda d: len(d))) + 2) * FONT_W
+        self.modal = Image(self.m, self.mlx, width, height)
+        self.fill_img(self.modal)
+        y = 10
+        for i in range(len(display)):
+            x = 5
             self.put_string(self.modal, x, y, display[i])
             y += FONT_H
         self.put_border(self.modal)
@@ -262,6 +300,10 @@ class MapDisplay:
             mx = (coord_hub[0] + coord_h[0]) // 2
             my = (coord_hub[1] + coord_h[1]) // 2
             self.put_square(mx - 3, my - 3, 7)
+            self.conn_coord.append({
+                "conn": c,
+                "coord": (mx, my)
+            })
 
     def put_square(self, x: int, y: int, size: int,
                    color: int = 0xFFFFFFFF) -> None:
