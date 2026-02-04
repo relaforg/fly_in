@@ -15,7 +15,7 @@ class Dijkstra:
     def _get_neighboors(self, hub: Hub) -> List[Hub]:
         n = []
         for c in hub.neighboors:
-            tmp = self._find_hub_by_name(c.to)
+            tmp = self._find_hub_by_name(c.dst)
             if (tmp is not None):
                 n.append(tmp)
         return (n)

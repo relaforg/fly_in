@@ -255,26 +255,29 @@ class MapDisplay:
 
     def put_connections(self, hub: Hub) -> None:
         for c in hub.neighboors:
-            h = [h for h in self.map.hubs if c.to == h.name][0]
-            self.put_line(self.img,
-                          self._graph_to_img_coord(hub.coord[0], hub.coord[1]),
-                          self._graph_to_img_coord(h.coord[0], h.coord[1]))
+            h = [h for h in self.map.hubs if c.dst == h.name][0]
+            coord_hub = self._graph_to_img_coord(hub.coord[0], hub.coord[1])
+            coord_h = self._graph_to_img_coord(h.coord[0], h.coord[1])
+            self.put_line(self.img, coord_hub, coord_h)
+            mx = (coord_hub[0] + coord_h[0]) // 2
+            my = (coord_hub[1] + coord_h[1]) // 2
+            self.put_square(mx - 3, my - 3, 7)
+
+    def put_square(self, x: int, y: int, size: int,
+                   color: int = 0xFFFFFFFF) -> None:
+        for dy in range(size):
+            for dx in range(size):
+                self.put_pixel(self.img, x + dx, y + dy, color)
 
     def put_hub(self, hub: Hub):
         x, y = self._graph_to_img_coord(hub.coord[0], hub.coord[1])
         size = 7
         offset = size // 2
-        for i in range(size):
-            for j in range(size):
-                color = self._color_to_hex(hub.color)
-                self.put_pixel(self.img, x - offset + j, y - offset + i, color)
+        color = self._color_to_hex(hub.color)
+        self.put_square(x - offset, y - offset, size, color)
         offset_x = len(hub.name) * FONT_W // 2
-        self.put_string(self.img, x - offset_x, y - size - FONT_H, hub.name)
-        # nb_drone = len(
-        #     [d for d in self.drones_state[self.step] if d.coord == hub.coord])
-        # if (nb_drone != 0):
-        #     self.put_string(self.img, x + 3, y + size + 5, str(nb_drone))
-        #     self.put_drone(x - 15, y + 10)
+        self.put_string(self.img, x - offset_x,
+                        y - size - FONT_H, hub.name)
 
     def fill_img(self, img: Image, color: int = 0x000000FF) -> None:
         """Fill an mlx image with color

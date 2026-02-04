@@ -61,7 +61,8 @@ class ParsingError(Exception):
 
 
 class Connection(BaseModel):
-    to: str = Field(min_length=1)
+    src: str = Field(min_length=1)
+    dst: str = Field(min_length=1)
     max_link_capacity: int = Field(ge=1, default=1)
 
 
@@ -377,11 +378,12 @@ class MapParser:
             self._hub_dont_exist_error(hubs[1])
         for i in range(2):
             cap = int(self.metadata.get("max_link_capacity", 1))
+            hub = self._find_hub(hubs[(i + 1) % 2], hub_list)[0]
             con = Connection(
-                to=hubs[i],
+                src=hub.name,
+                dst=hubs[i],
                 max_link_capacity=cap
             )
-            hub = self._find_hub(hubs[(i + 1) % 2], hub_list)[0]
             hub.neighboors.append(con)
 
     def _hub_dont_exist_error(self, hub_name: str):
