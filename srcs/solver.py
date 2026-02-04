@@ -47,4 +47,3 @@ class Solver:
             out += step_str.strip() + "\n"
         with open("output.txt", "w") as file:
             file.write(out)
-        print(out)

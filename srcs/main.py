@@ -6,7 +6,7 @@ from solver import Solver
 from copy import deepcopy
 
 if (__name__ == "__main__"):
-    parser = MapParser("maps/challenger/01_the_impossible_dream.txt")
+    parser = MapParser("maps/easy/02_simple_fork.txt")
     try:
         map = parser.extract()
         paths = Dijkstra(map).run()

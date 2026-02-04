@@ -5,6 +5,7 @@ from typing import Any, Tuple, List
 from drone import Drone
 from time import monotonic
 from copy import deepcopy
+from math import ceil
 
 
 class Image:
@@ -74,10 +75,10 @@ class MapDisplay:
 
     def _graph_to_img_coord(self, graph_x: int,
                             graph_y: int) -> Tuple[int, int]:
-        return (((graph_x + self.x_offset) * self.cell_size)
-                + self.cell_size // 2,
-                ((graph_y + self.y_offset) * self.cell_size)
-                + self.cell_size // 2)
+        return (ceil(((graph_x + self.x_offset) * self.cell_size)
+                + self.cell_size // 2),
+                ceil(((graph_y + self.y_offset) * self.cell_size)
+                + self.cell_size // 2))
 
     def _win_to_img_coord(self, win_x: int, win_y: int) -> Tuple[int, int]:
         x: int = -((1080 - self.img.width) // 2 + self.offset[0] - win_x)
@@ -119,6 +120,7 @@ class MapDisplay:
             self.put_connections(h)
         for h in self.map.hubs:
             self.put_hub(h)
+        self.put_drones()
 
     def refresh(self) -> None:
         """Refresh the window to display modification
@@ -238,6 +240,19 @@ class MapDisplay:
                 if (Drone.glyph()[dy][dx] == 1):
                     self.put_pixel(self.img, x + dx, y + dy)
 
+    def put_drones(self):
+        nbr = {}
+        for d in self.drones_state[self.step]:
+            if (nbr.get(d.coord)):
+                nbr[d.coord] += 1
+            else:
+                nbr[d.coord] = 1
+        for (coord, nb_drone) in nbr.items():
+            x, y = self._graph_to_img_coord(coord[0], coord[1])
+            print(x, y)
+            self.put_string(self.img, x + 3, y + 7 + 5, str(nb_drone))
+            self.put_drone(x - 15, y + 10)
+
     def put_connections(self, hub: Hub) -> None:
         for c in hub.neighboors:
             h = [h for h in self.map.hubs if c.to == h.name][0]
@@ -255,11 +270,11 @@ class MapDisplay:
                 self.put_pixel(self.img, x - offset + j, y - offset + i, color)
         offset_x = len(hub.name) * FONT_W // 2
         self.put_string(self.img, x - offset_x, y - size - FONT_H, hub.name)
-        nb_drone = len(
-            [d for d in self.drones_state[self.step] if d.coord == hub.coord])
-        if (nb_drone != 0):
-            self.put_string(self.img, x + 3, y + size + 5, str(nb_drone))
-            self.put_drone(x - 15, y + 10)
+        # nb_drone = len(
+        #     [d for d in self.drones_state[self.step] if d.coord == hub.coord])
+        # if (nb_drone != 0):
+        #     self.put_string(self.img, x + 3, y + size + 5, str(nb_drone))
+        #     self.put_drone(x - 15, y + 10)
 
     def fill_img(self, img: Image, color: int = 0x000000FF) -> None:
         """Fill an mlx image with color
