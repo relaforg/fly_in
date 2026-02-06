@@ -35,6 +35,7 @@ if (__name__ == "__main__"):
                 break
     except FileNotFoundError:
         print("Maps folder not found")
+        exit(1)
 
     try:
         # print(str(file_path))
