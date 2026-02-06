@@ -372,6 +372,18 @@ class MapParser:
                     col=len(self.field) + 2,
                     length=len(self.parameters[0])
                 ))
+        for c in conn_list:
+            if (hubs[0] == c.src and hubs[1] == c.dst
+                    or hubs[1] == c.src and hubs[0] == c.dst):
+                raise ParsingError(
+                    "Connection already exist",
+                    ParseContext(
+                        file=self.file_path,
+                        line_no=self.no_line,
+                        line=self.line,
+                        col=len(self.field) + 2,
+                        length=len(self.parameters[0])
+                    ))
         hub1 = self._find_hub(hubs[0], hub_list)
         hub2 = self._find_hub(hubs[1], hub_list)
         if (not len(hub1)):

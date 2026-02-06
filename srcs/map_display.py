@@ -73,44 +73,29 @@ class MapDisplay:
         except PermissionError:
             raise PermissionError(
                 f"You do not have read permission on {output_path}")
-
-        # Index des hubs : nom -> coord
         hub_coord_by_name = {h.name: h.coord for h in self.map.hubs}
-
         for line_idx in range(nbr_line):
-            # Copie de l'état au tour line_idx
             state = deepcopy(self.drones_state[line_idx])
-
-            # Index des drones dans cet état : id -> objet Drone
             drone_by_id = {d.id: d for d in state}
-
-            # Chaque token: "D<id>-<hub>"
             for token in lines[line_idx].split():
                 raw_id, hub_name = token.split("-", 1)
-                drone_id = raw_id[1:]  # enlève "D"
-
+                drone_id = raw_id[1:]
                 d = drone_by_id.get(drone_id)
                 coord = hub_coord_by_name.get(hub_name)
                 if d is not None and coord is not None:
                     d.coord = coord
                 elif d is not None:
-                    # Cas "connexion" : ex "SRC_DST"
                     if "->" not in hub_name:
-                        continue  # format inconnu, on ignore
-
+                        continue
                     src_name, dst_name = hub_name.split("->", 1)
-
                     src_coord = hub_coord_by_name.get(src_name)
                     dst_coord = hub_coord_by_name.get(dst_name)
                     if src_coord is None or dst_coord is None:
-                        continue  # connexion vers hub inconnu
-
-                    # Milieu en coordonnées "graph" (entier)
+                        continue
                     mx = (src_coord[0] + dst_coord[0]) / 2
                     my = (src_coord[1] + dst_coord[1]) / 2
                     d.coord = (mx, my)
                 else:
-                    # drone_id inconnu (n’existe pas dans cet état)
                     continue
 
             self.drones_state.append(state)
