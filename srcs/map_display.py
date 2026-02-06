@@ -281,7 +281,7 @@ class MapDisplay:
     def get_conn_double_click(self, x: int, y: int) -> ConnCoord | None:
         for c in self.conn_coord:
             x2, y2 = c["coord"]
-            if (x <= x2 + 5 and x >= x2 - 5 and y <= y2 + 5 and y >= y2 - 5):
+            if (x <= x2 + 9 and x >= x2 - 9 and y <= y2 + 5 and y >= y2 - 5):
                 return (c)
         return (None)
 
@@ -359,7 +359,7 @@ class MapDisplay:
             self.put_line(self.img, coord_hub, coord_h)
             mx = (coord_hub[0] + coord_h[0]) // 2
             my = (coord_hub[1] + coord_h[1]) // 2
-            self.put_square(mx - 3, my - 3, 7)
+            self.put_rect(mx - 7, my - 3, 15, 7)
             self.conn_coord.append({
                 "conn": c,
                 "coord": (mx, my)
@@ -369,6 +369,12 @@ class MapDisplay:
                    color: int = 0xFFFFFFFF) -> None:
         for dy in range(size):
             for dx in range(size):
+                self.put_pixel(self.img, x + dx, y + dy, color)
+
+    def put_rect(self, x: int, y: int, width: int, height: int,
+                 color: int = 0xFFFFFFFF) -> None:
+        for dy in range(height):
+            for dx in range(width):
                 self.put_pixel(self.img, x + dx, y + dy, color)
 
     def put_hub(self, hub: Hub):
