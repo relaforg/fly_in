@@ -1,10 +1,13 @@
+from typing import List, Tuple
+
+
 class Drone:
-    def __init__(self, id, coord):
+    def __init__(self, id: str, coord: Tuple[float, float]) -> None:
         self.id = id
         self.coord = coord
 
     @staticmethod
-    def glyph():
+    def glyph() -> List[List[int]]:
         return ([
             [0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0],
             [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],

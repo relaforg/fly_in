@@ -3,3 +3,5 @@ __pycache__
 maps
 *.otf
 font_parser.py
+.venv
+output.txt

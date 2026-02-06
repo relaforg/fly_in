@@ -1,2 +1,5 @@
 pydantic
 questionary
+typing
+mlx-2.2.1-py3-none-any.whl
+

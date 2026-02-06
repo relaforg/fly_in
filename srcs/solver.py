@@ -4,7 +4,7 @@ from drone import Drone
 
 
 class Solver:
-    def __init__(self, map: Map, paths: Dict[str, str],
+    def __init__(self, map: Map, paths: Dict[str, List[Tuple[str, int]]],
                  drones: List[Drone]) -> None:
         self.map = map
         self.paths = paths
@@ -28,7 +28,7 @@ class Solver:
                 return (c)
         return (None)
 
-    def _get_hub_cost(self, hub: Hub):
+    def _get_hub_cost(self, hub: Hub) -> int:
         match hub.zone_type:
             case "normal":
                 return (1)
@@ -38,6 +38,8 @@ class Solver:
                 return (1)
             case "blocked":
                 return (-1)
+            case _:
+                return (10)
 
     # MANAGE RESTRICTED PISTE considerer la connection comme un hub
     def run(self) -> None:
@@ -79,8 +81,8 @@ class Solver:
                                      or con.max_link_capacity
                                      <= len(conn[(src.name, dest.name)]))):
                                 continue
-                            if (i > 0 and self.paths[src.name][0][1] +
-                                    self._get_hub_cost(dest) < p[1]):
+                            if (i > 0 and int(self.paths[src.name][0][1]) +
+                                    self._get_hub_cost(dest) < int(p[1])):
                                 continue
                             if (dest.zone_type == "restricted"):
                                 next_transit.append((d, dest))

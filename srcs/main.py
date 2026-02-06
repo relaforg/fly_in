@@ -47,5 +47,6 @@ if (__name__ == "__main__"):
         Solver(map, paths, deepcopy(drones)).run()
         display = MapDisplay(map, drones, "output.txt")
         display.run()
+        display.destroy()
     except ParsingError as e:
         print(e)

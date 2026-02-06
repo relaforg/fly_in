@@ -94,7 +94,7 @@ class MapParser:
         self.line: str = ""
         self.field: str = ""
         self.parameters: List[str] = []
-        self.metadata: Dict = {}
+        self.metadata: Dict[str, str] = {}
 
     def iter_lines(self) -> Iterator[str]:
         """"Yield file line one by one"""
@@ -131,7 +131,7 @@ class MapParser:
         elif (key == "max_drones" and int(value) <= 0):
             raise ValueError
 
-    def _validate_metadata(self, metadata: Dict) -> None:
+    def _validate_metadata(self, metadata: Dict[str, str]) -> None:
         offset = 0
         if ("hub" in self.field):
             try:
@@ -195,7 +195,7 @@ class MapParser:
                         length=len(str(value))
                     ))
 
-    def _parse_attrs(self, s: str) -> dict:
+    def _parse_attrs(self, s: str) -> Dict[str, str]:
         try:
             s = s.strip("[]")
             parts = s.split()
@@ -214,7 +214,7 @@ class MapParser:
                     length=len(s)
                 ))
 
-    def _split_line(self):
+    def _split_line(self) -> None:
         try:
             self.field, value = self.line.split(":")
             self.parameters = value.split("[")[0].strip().split()
@@ -267,7 +267,7 @@ class MapParser:
                     length=sum(len(x) for x in coords) + len(coords) - 1
                 ))
 
-    def _raise_parameter_error(self, message: str):
+    def _raise_parameter_error(self, message: str) -> None:
         raise ParsingError(
             message,
             ParseContext(
@@ -279,7 +279,7 @@ class MapParser:
                            ) + len(self.parameters) - 1,
             ))
 
-    def _get_nbr_drones(self):
+    def _get_nbr_drones(self) -> int:
         if (self.field != "nb_drones"):
             raise ParsingError(
                 "The first line must be the number of drone")
@@ -309,7 +309,7 @@ class MapParser:
                     length=len(self.parameters[0])
                 ))
 
-    def _raise_start_end_duplicate(self, hub: str):
+    def _raise_start_end_duplicate(self, hub: str) -> None:
         raise ParsingError(
             f"You must provide only one {hub} position",
             ParseContext(
@@ -320,7 +320,7 @@ class MapParser:
                 length=len(self.field)
             ))
 
-    def _add_hub(self, hub_list: List[Hub]):
+    def _add_hub(self, hub_list: List[Hub]) -> None:
         hub = self._find_hub(self.parameters[0], hub_list)
         if (not len(hub)):
             if ("-" in self.parameters[0]):
@@ -333,13 +333,14 @@ class MapParser:
                         col=len(self.field) + 2,
                         length=len(self.parameters[0])
                     ))
-            return (hub_list.append(Hub(
+            hub_list.append(Hub(
                 name=self.parameters[0],
                 coord=self._coords_to_2tuple(self.parameters[1:3]),
                 zone_type=self.metadata.get("zone", "normal"),
                 color=self.metadata.get("color", "white"),
-                max_drones=self.metadata.get("max_drones", 1)
-            )))
+                max_drones=int(self.metadata.get("max_drones", 1))
+            ))
+            return (None)
         raise ParsingError(
             f"{self.parameters[0]} hub already exist",
             ParseContext(
@@ -350,7 +351,7 @@ class MapParser:
                 length=len(self.field)
             ))
 
-    def _find_hub(self, hub_name: str, hub_list: List[Hub]):
+    def _find_hub(self, hub_name: str, hub_list: List[Hub]) -> List[Hub]:
         return ([h for h in hub_list if h.name == hub_name])
 
     def _handle_connection(self, hub_list: List[Hub],
@@ -398,7 +399,7 @@ class MapParser:
             conn_list.append(con)
             hub.neighboors.append(con)
 
-    def _hub_dont_exist_error(self, hub_name: str):
+    def _hub_dont_exist_error(self, hub_name: str) -> None:
         raise ParsingError(
             f"hub {hub_name} does not exist",
             ParseContext(

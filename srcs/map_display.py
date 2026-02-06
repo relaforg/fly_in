@@ -1,7 +1,7 @@
 from map_parser import Map, Hub, Connection
 from font_monospace import FONT, FONT_W, FONT_H, NO_CHAR
 from mlx import Mlx
-from typing import Any, Tuple, List, TypedDict
+from typing import Any, Tuple, List, TypedDict, Dict
 from drone import Drone
 from time import monotonic
 from copy import deepcopy
@@ -45,7 +45,7 @@ class MapDisplay:
         self.step = 0
         self.conn_coord: List[ConnCoord] = []
 
-    def _compute_graph_info(self):
+    def _compute_graph_info(self) -> None:
         min_x = min(self.map.hubs, key=lambda x: x.coord[0]).coord[0]
         max_x = max(self.map.hubs, key=lambda x: x.coord[0]).coord[0]
         min_y = min(self.map.hubs, key=lambda x: x.coord[1]).coord[1]
@@ -54,7 +54,7 @@ class MapDisplay:
         self.x_offset = -min(min_x, 0)
         self.y_offset = -min(min_y, 0)
 
-    def _compute_img(self):
+    def _compute_img(self) -> None:
         self.img_height = self.graph_size[1] * self.cell_size
 
     def _find_hub_by_name(self, hub_name: str) -> Hub | None:
@@ -100,8 +100,8 @@ class MapDisplay:
 
             self.drones_state.append(state)
 
-    def _graph_to_img_coord(self, graph_x: int,
-                            graph_y: int) -> Tuple[int, int]:
+    def _graph_to_img_coord(self, graph_x: float,
+                            graph_y: float) -> Tuple[int, int]:
         return (ceil(((graph_x + self.x_offset) * self.cell_size)
                 + self.cell_size // 2),
                 ceil(((graph_y + self.y_offset) * self.cell_size)
@@ -117,7 +117,7 @@ class MapDisplay:
         map_y = (720 - self.img.height) // 2 + self.offset[1]
         return (map_x + img_x, map_y + img_y)
 
-    def _color_to_hex(self, color: str):
+    def _color_to_hex(self, color: str) -> int:
         match color:
             case "green":
                 return (0x00FF00FF)
@@ -157,7 +157,7 @@ class MapDisplay:
                 print(color)
                 return (0xFFFFFFFF)
 
-    def run(self):
+    def run(self) -> None:
         self.m.mlx_hook(self.win, 33, 0,
                         lambda _: self.m.mlx_loop_exit(self.mlx), None)
         self.m.mlx_mouse_hook(self.win, self.on_mouse, None)
@@ -167,7 +167,12 @@ class MapDisplay:
         self.refresh()
         self.m.mlx_loop(self.mlx)
 
-    def draw(self):
+    def destroy(self) -> None:
+        self.m.mlx_destroy_image(self.mlx, self.img.img)
+        if (self.modal is not None):
+            self.m.mlx_destroy_image(self.mlx, self.modal.img)
+
+    def draw(self) -> None:
         self.fill_img(self.img)
         self.put_border(self.img)
         for h in self.map.hubs:
@@ -273,7 +278,7 @@ class MapDisplay:
                 return (c)
         return (None)
 
-    def put_hub_info(self, hub: Hub):
+    def put_hub_info(self, hub: Hub) -> None:
         if (self.modal is not None):
             self.m.mlx_destroy_image(self.mlx, self.modal.img)
         display: List[str] = [hub.name, "zone_type: " + hub.zone_type,
@@ -297,7 +302,7 @@ class MapDisplay:
             y += FONT_H
         self.put_border(self.modal)
 
-    def put_conn_info(self, conn: Connection):
+    def put_conn_info(self, conn: Connection) -> None:
         if (self.modal is not None):
             self.m.mlx_destroy_image(self.mlx, self.modal.img)
         display: List[str] = [f"{conn.src} -> {conn.dst}",
@@ -313,7 +318,7 @@ class MapDisplay:
             y += FONT_H
         self.put_border(self.modal)
 
-    def put_border(self, img: Image):
+    def put_border(self, img: Image) -> None:
         for y in range(img.height):
             for x in range(img.width):
                 if (x == 0 or y == 0 or x == img.width - 1
@@ -326,8 +331,8 @@ class MapDisplay:
                 if (Drone.glyph()[dy][dx] == 1):
                     self.put_pixel(self.img, x + dx, y + dy)
 
-    def put_drones(self):
-        nbr = {}
+    def put_drones(self) -> None:
+        nbr: Dict[Tuple[float, float], int] = {}
         for d in self.drones_state[self.step]:
             if (nbr.get(d.coord)):
                 nbr[d.coord] += 1
@@ -364,7 +369,7 @@ class MapDisplay:
             for dx in range(width):
                 self.put_pixel(self.img, x + dx, y + dy, color)
 
-    def put_hub(self, hub: Hub):
+    def put_hub(self, hub: Hub) -> None:
         x, y = self._graph_to_img_coord(hub.coord[0], hub.coord[1])
         size = 7
         offset = size // 2
@@ -388,7 +393,7 @@ class MapDisplay:
         ))
         img.addr[:] = px * (img.width * img.height)
 
-    def put_string(self, img: Image, x: int, y: int, string: str):
+    def put_string(self, img: Image, x: int, y: int, string: str) -> None:
         for c in range(len(string)):
             self.put_letter(img, x + c * FONT_W, y, string[c])
 
@@ -400,7 +405,8 @@ class MapDisplay:
                     self.put_pixel(img, x + dx, y + dy,
                                    0xFFFFFF00 + glyph[dy][dx])
 
-    def put_line(self, img: Image, c1: Tuple[int, int], c2: Tuple[int, int]):
+    def put_line(self, img: Image, c1: Tuple[int, int],
+                 c2: Tuple[int, int]) -> None:
         dx = abs(c2[0] - c1[0])
         dy = abs(c2[1] - c1[1])
         sx = 1 if c1[0] < c2[0] else -1

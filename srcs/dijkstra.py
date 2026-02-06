@@ -1,5 +1,5 @@
 from map_parser import Map, Hub
-from typing import List
+from typing import List, Dict, Tuple
 
 
 class Dijkstra:
@@ -20,7 +20,7 @@ class Dijkstra:
                 n.append(tmp)
         return (n)
 
-    def _get_hub_cost(self, hub: Hub):
+    def _get_hub_cost(self, hub: Hub) -> int:
         match hub.zone_type:
             case "normal":
                 return (1)
@@ -30,24 +30,32 @@ class Dijkstra:
                 return (1)
             case "blocked":
                 return (-1)
+            case _:
+                return (10)
 
-    def _reverse(self, out):
-        new = {}
+    def _priority_key(self, edge: Tuple[str, int]) -> Tuple[int, int]:
+        dst, cost = edge
+        hub = self._find_hub_by_name(dst)
+        if hub is None:
+            return (cost, 1)
+        return (cost, 0 if hub.zone_type == "priority" else 1)
+
+    def _reverse(self, out: Dict[str, List[Tuple[str, int]]]) \
+            -> Dict[str, List[Tuple[str, int]]]:
+        new: Dict[str, List[Tuple[str, int]]] = {}
         for src, edges in out.items():
             for (dst, cost) in edges:
                 if (dst not in new):
                     new[dst] = []
                 new[dst].append((src, cost))
         for (name, values) in new.items():
-            values.sort(key=lambda c:
-                        (c[1], 0 if self._find_hub_by_name(c[0]).zone_type ==
-                         "priority" else 1))
+            values.sort(key=self._priority_key)
         return (new)
 
-    def run(self):
+    def run(self) -> Dict[str, List[Tuple[str, int]]]:
         visited = set()
         queue = [(self.map.end, 0)]
-        out = {}
+        out: Dict[str, List[Tuple[str, int]]] = {}
 
         while (len(queue)):
             current, cost = queue.pop(0)
@@ -56,10 +64,11 @@ class Dijkstra:
             if (not out.get(current.name)):
                 out[current.name] = []
             for h in neighboors:
-                # sauvegarder que si plus petit
                 if (h.name not in visited and self._get_hub_cost(current) > 0):
-                    new_cost = cost + \
-                        self._get_hub_cost(self._find_hub_by_name(h.name))
+                    tmp = self._find_hub_by_name(h.name)
+                    if (tmp is None):
+                        continue
+                    new_cost = cost + self._get_hub_cost(tmp)
                     for i in range(len(out[current.name])):
                         if (h.name == out[current.name][i][0]):
                             if (new_cost < out[current.name][i][1]):
