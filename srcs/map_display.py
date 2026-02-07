@@ -15,6 +15,15 @@ class ConnCoord(TypedDict):
 
 
 class Image:
+    """mlx img wrapper class
+
+    Attributes:
+        img: mlx img
+        bpp: int
+        width: int
+        height: int
+    """
+
     def __init__(self, m: Mlx, mlx: Any, width: int, height: int):
         self.img = m.mlx_new_image(mlx, width, height)
         self.addr, bpp, self.line_len, _ = m.mlx_get_data_addr(self.img)
@@ -24,6 +33,29 @@ class Image:
 
 
 class MapDisplay:
+    """ Map diplay class
+
+    Attributes:
+        map: Map
+        drones_state: List[List[Drone]]
+        cell_size: int
+        offset: Tuple[int, int]
+        drag_start: Tuple[int, int]
+        m: Mlx
+        mlx: mlx pointer
+        win: mlx window
+        img: Image
+        last_click: timestamp
+        modal: Image
+        current_modal_coord: Tuple[int, int]
+        step: int
+        conn_coord: Tuple[int, int]
+        graph_size: int
+        x_offset: int
+        y_offset: int
+        img_height: int
+    """
+
     def __init__(self, map: Map, drones: List[Drone], output_path: str):
         self.map = map
         self.drones_state = [deepcopy(drones)]
@@ -46,6 +78,7 @@ class MapDisplay:
         self.conn_coord: List[ConnCoord] = []
 
     def _compute_graph_info(self) -> None:
+        """Compute graph properties"""
         min_x = min(self.map.hubs, key=lambda x: x.coord[0]).coord[0]
         max_x = max(self.map.hubs, key=lambda x: x.coord[0]).coord[0]
         min_y = min(self.map.hubs, key=lambda x: x.coord[1]).coord[1]
@@ -54,16 +87,30 @@ class MapDisplay:
         self.x_offset = -min(min_x, 0)
         self.y_offset = -min(min_y, 0)
 
-    def _compute_img(self) -> None:
-        self.img_height = self.graph_size[1] * self.cell_size
-
     def _find_hub_by_name(self, hub_name: str) -> Hub | None:
+        """Find hub by name
+
+        Args:
+            hub_name: str
+
+        Returns:
+            Hub if found else None
+        """
         for h in self.map.hubs:
             if (h.name == hub_name):
                 return (h)
         return (None)
 
     def _extract_output(self, output_path: str) -> None:
+        """Extract output.txt info
+
+        Args:
+            output_path: str
+
+        Raises:
+            FileNotFoundError
+            PermissionError
+        """
         try:
             with open(output_path, "r") as file:
                 lines = list(file)
@@ -102,22 +149,57 @@ class MapDisplay:
 
     def _graph_to_img_coord(self, graph_x: float,
                             graph_y: float) -> Tuple[int, int]:
+        """Convert graph to img coordinate
+
+        Args:
+            graph_x: float
+            graph_y: float
+
+        Returns:
+            Tuple[int, int]
+        """
         return (ceil(((graph_x + self.x_offset) * self.cell_size)
                 + self.cell_size // 2),
                 ceil(((graph_y + self.y_offset) * self.cell_size)
                 + self.cell_size // 2))
 
     def _win_to_img_coord(self, win_x: int, win_y: int) -> Tuple[int, int]:
+        """Convert window to img coordinates
+
+        Args:
+            win_x: int
+            win_y: int
+
+        Returns:
+            Tuple[int, int]
+        """
         x: int = -((1080 - self.img.width) // 2 + self.offset[0] - win_x)
         y: int = -((720 - self.img.height) // 2 + self.offset[1] - win_y)
         return (x, y)
 
     def _img_to_win_coord(self, img_x: int, img_y: int) -> Tuple[int, int]:
+        """Convert image to window coordinates
+
+        Args:
+            img_x: int
+            img_y: int
+
+        Returns:
+            Tuple[int, int]
+        """
         map_x = (1080 - self.img.width) // 2 + self.offset[0]
         map_y = (720 - self.img.height) // 2 + self.offset[1]
         return (map_x + img_x, map_y + img_y)
 
     def _color_to_hex(self, color: str) -> int:
+        """Convert color to hexa representation
+
+        Args:
+            color: str
+
+        Returns:
+            int
+        """
         match color:
             case "green":
                 return (0x00FF00FF)
@@ -158,6 +240,7 @@ class MapDisplay:
                 return (0xFFFFFFFF)
 
     def run(self) -> None:
+        """Launch display"""
         self.m.mlx_hook(self.win, 33, 0,
                         lambda _: self.m.mlx_loop_exit(self.mlx), None)
         self.m.mlx_mouse_hook(self.win, self.on_mouse, None)
@@ -168,11 +251,14 @@ class MapDisplay:
         self.m.mlx_loop(self.mlx)
 
     def destroy(self) -> None:
+        """Free all image and window"""
         self.m.mlx_destroy_image(self.mlx, self.img.img)
+        self.m.mlx_destroy_window(self.mlx, self.win)
         if (self.modal is not None):
             self.m.mlx_destroy_image(self.mlx, self.modal.img)
 
     def draw(self) -> None:
+        """Draw map"""
         self.fill_img(self.img)
         self.put_border(self.img)
         for h in self.map.hubs:
@@ -185,17 +271,13 @@ class MapDisplay:
             f" - Simulated turn: {self.step}")
 
     def refresh(self) -> None:
-        """Refresh the window to display modification
-        """
+        """Refresh the window to display modification"""
         x: int = (1080 - self.img.width) // 2 + self.offset[0]
         y: int = (720 - self.img.height) // 2 + self.offset[1]
         self.m.mlx_clear_window(self.mlx, self.win)
         self.m.mlx_put_image_to_window(self.mlx, self.win, self.img.img, x, y)
         if (self.modal is not None):
-            # if (self.current_hub is not None):
             if (self.current_modal_coord is not None):
-                # x, y = self._graph_to_img_coord(self.current_modal_coord[0],
-                #                                 self.current_modal_coord[1])
                 x, y = self._img_to_win_coord(self.current_modal_coord[0],
                                               self.current_modal_coord[1])
             self.m.mlx_put_image_to_window(
@@ -265,6 +347,15 @@ class MapDisplay:
                 self.refresh()
 
     def get_hub_double_click(self, x: int, y: int) -> Hub | None:
+        """Check if a hub has been double clicked
+
+        Args:
+            x: int
+            y: int
+
+        Returns:
+            Hub if double clicked else None
+        """
         for h in self.map.hubs:
             x2, y2 = self._graph_to_img_coord(h.coord[0], h.coord[1])
             if (x <= x2 + 5 and x >= x2 - 5 and y <= y2 + 5 and y >= y2 - 5):
@@ -272,6 +363,15 @@ class MapDisplay:
         return (None)
 
     def get_conn_double_click(self, x: int, y: int) -> ConnCoord | None:
+        """Check if a connection has been double clicked
+
+        Args:
+            x: int
+            y: int
+
+        Returns:
+            Connection if double clicked else None
+        """
         for c in self.conn_coord:
             x2, y2 = c["coord"]
             if (x <= x2 + 9 and x >= x2 - 9 and y <= y2 + 5 and y >= y2 - 5):
@@ -279,6 +379,11 @@ class MapDisplay:
         return (None)
 
     def put_hub_info(self, hub: Hub) -> None:
+        """Put hub info in modal
+
+        Args:
+            hub: Hub
+        """
         if (self.modal is not None):
             self.m.mlx_destroy_image(self.mlx, self.modal.img)
         display: List[str] = [hub.name, "zone_type: " + hub.zone_type,
@@ -303,6 +408,11 @@ class MapDisplay:
         self.put_border(self.modal)
 
     def put_conn_info(self, conn: Connection) -> None:
+        """Put connection info in modal
+
+        Args:
+            conn: Connection
+        """
         if (self.modal is not None):
             self.m.mlx_destroy_image(self.mlx, self.modal.img)
         display: List[str] = [f"{conn.src} -> {conn.dst}",
@@ -319,6 +429,11 @@ class MapDisplay:
         self.put_border(self.modal)
 
     def put_border(self, img: Image) -> None:
+        """Put border to img
+
+        Args:
+            img: Image
+        """
         for y in range(img.height):
             for x in range(img.width):
                 if (x == 0 or y == 0 or x == img.width - 1
@@ -326,12 +441,19 @@ class MapDisplay:
                     self.put_pixel(img, x, y)
 
     def put_drone(self, x: int, y: int) -> None:
+        """Put a drone
+
+        Args:
+            x: int
+            y: int
+        """
         for dy in range(len(Drone.glyph())):
             for dx in range(len(Drone.glyph()[dy])):
                 if (Drone.glyph()[dy][dx] == 1):
                     self.put_pixel(self.img, x + dx, y + dy)
 
     def put_drones(self) -> None:
+        """Put all drones onto self.img"""
         nbr: Dict[Tuple[float, float], int] = {}
         for d in self.drones_state[self.step]:
             if (nbr.get(d.coord)):
@@ -344,6 +466,11 @@ class MapDisplay:
             self.put_drone(x - 15, y + 10)
 
     def put_connections(self, hub: Hub) -> None:
+        """Put hub connections line
+
+        Args:
+            hub: Hub
+        """
         for c in hub.neighboors:
             h = [h for h in self.map.hubs if c.dst == h.name][0]
             coord_hub = self._graph_to_img_coord(hub.coord[0], hub.coord[1])
@@ -359,17 +486,39 @@ class MapDisplay:
 
     def put_square(self, x: int, y: int, size: int,
                    color: int = 0xFFFFFFFF) -> None:
+        """Put a filled square
+
+        Args:
+            x: int
+            y: int
+            size: int
+            color: int
+        """
         for dy in range(size):
             for dx in range(size):
                 self.put_pixel(self.img, x + dx, y + dy, color)
 
     def put_rect(self, x: int, y: int, width: int, height: int,
                  color: int = 0xFFFFFFFF) -> None:
+        """Put a filled rectangle
+
+        Args:
+            x: int
+            y: int
+            width: int
+            height: int
+            color: int
+        """
         for dy in range(height):
             for dx in range(width):
                 self.put_pixel(self.img, x + dx, y + dy, color)
 
     def put_hub(self, hub: Hub) -> None:
+        """Put a hub
+
+        Args:
+            hub: Hub
+        """
         x, y = self._graph_to_img_coord(hub.coord[0], hub.coord[1])
         size = 7
         offset = size // 2
@@ -394,10 +543,26 @@ class MapDisplay:
         img.addr[:] = px * (img.width * img.height)
 
     def put_string(self, img: Image, x: int, y: int, string: str) -> None:
+        """Put a string onto img
+
+        Args:
+            img: Image
+            x: int
+            y: int
+            string: str
+        """
         for c in range(len(string)):
             self.put_letter(img, x + c * FONT_W, y, string[c])
 
     def put_letter(self, img: Image, x: int, y: int, letter: str) -> None:
+        """Put a letter onto img
+
+        Args:
+            img: Image
+            x: x
+            y: y
+            letter: str
+        """
         glyph = FONT.get(letter, NO_CHAR)
         for dy in range(len(glyph)):
             for dx in range(len(glyph[dy])):
@@ -407,6 +572,13 @@ class MapDisplay:
 
     def put_line(self, img: Image, c1: Tuple[int, int],
                  c2: Tuple[int, int]) -> None:
+        """Put line with bresenham algorithm
+
+        Args:
+            img: Image
+            c1: Tuple[int, int]
+            c2: Tuple[int, int]
+        """
         dx = abs(c2[0] - c1[0])
         dy = abs(c2[1] - c1[1])
         sx = 1 if c1[0] < c2[0] else -1

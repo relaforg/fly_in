@@ -16,6 +16,13 @@ class ParseContext:
 
 
 class ParsingError(Exception):
+    """ParsingError custom error
+
+    Attributes:
+        message: str
+        ctx: ParseContext
+    """
+
     def __init__(self, message: str, ctx: Optional[ParseContext] = None):
         super().__init__(self._format(message, ctx))
         self.message = message
@@ -23,6 +30,15 @@ class ParsingError(Exception):
 
     @staticmethod
     def _format(message: str, ctx: Optional[ParseContext]) -> str:
+        """Format error message
+
+        Args:
+            message: str
+            ctx: ParseContext
+
+        Returns:
+            str
+        """
         def c(text: str, code: str) -> str:
             return f"\x1b[{code}m{text}\x1b[0m"
 
@@ -84,6 +100,16 @@ class Map(BaseModel):
 
 
 class MapParser:
+    """MapPaerser class
+
+    Attributes:
+        no_line: int
+        line: str
+        field: str
+        parameters: List[str]
+        metadata: Dict[str, str]
+    """
+
     def __init__(self, file_path: str) -> None:
         if Path(file_path).is_file() and os.access(file_path, os.R_OK):
             self.file_path = file_path
@@ -108,6 +134,16 @@ class MapParser:
 
     @staticmethod
     def find_nth_occurence(c: str, s: str, n: int) -> int:
+        """Find the nth occurence of c in s
+
+        Args:
+            c: str
+            s: str
+            n: int
+
+        Returns:
+            int
+        """
         index = -1
         for i in range(n):
             index = s.find(c, index + 1)
@@ -115,6 +151,16 @@ class MapParser:
 
     def _validate_hub_metadata(self, key: str, value: str,
                                offset: int) -> None:
+        """Check if hub metadata are correct
+
+        Args:
+            key: str
+            value: str
+            offset: int
+
+        Raises:
+            ParsingError
+        """
         if (key == "zone" and value not in
                 ["normal", "restricted", "priority", "blocked"]):
             raise ParsingError(
@@ -132,6 +178,14 @@ class MapParser:
             raise ValueError
 
     def _validate_metadata(self, metadata: Dict[str, str]) -> None:
+        """Check if metadata are correct
+
+        Args:
+            metadata: Dict[str, str]
+
+        Raises:
+            ParsingError
+        """
         offset = 0
         if ("hub" in self.field):
             try:
@@ -196,6 +250,17 @@ class MapParser:
                     ))
 
     def _parse_attrs(self, s: str) -> Dict[str, str]:
+        """Separate metadata attributes
+
+        Args:
+            s: str
+
+        Returns:
+            Dict[str, str]
+
+        Raises:
+            ParsingError
+        """
         try:
             s = s.strip("[]")
             parts = s.split()
@@ -215,6 +280,11 @@ class MapParser:
                 ))
 
     def _split_line(self) -> None:
+        """Separate each line sections, field, params, metadata
+
+        Raises:
+            ParsingError
+        """
         try:
             self.field, value = self.line.split(":")
             self.parameters = value.split("[")[0].strip().split()
@@ -254,6 +324,17 @@ class MapParser:
                 ))
 
     def _coords_to_2tuple(self, coords: List[str]) -> Tuple[int, int]:
+        """Convert str coordinates to tuple coordinates
+
+        Args:
+            coords: List[str]
+
+        Returns:
+            Tuple[int, int]
+
+        Raises:
+            ParsingError
+        """
         try:
             return (int(coords[0]), int(coords[1]))
         except ValueError:
@@ -268,6 +349,14 @@ class MapParser:
                 ))
 
     def _raise_parameter_error(self, message: str) -> None:
+        """Raise a error on parameters
+
+        Args:
+            message: str
+
+        Raises:
+            ParsingError
+        """
         raise ParsingError(
             message,
             ParseContext(
@@ -280,6 +369,14 @@ class MapParser:
             ))
 
     def _get_nbr_drones(self) -> int:
+        """Get the number of drones
+
+        Returns:
+            int
+
+        Raises:
+            ParsingError
+        """
         if (self.field != "nb_drones"):
             raise ParsingError(
                 "The first line must be the number of drone")
@@ -310,6 +407,14 @@ class MapParser:
                 ))
 
     def _raise_start_end_duplicate(self, hub: str) -> None:
+        """Raise error if start or end is duplicate
+
+        Args:
+            hub: str
+
+        Raises:
+            ParsingError
+        """
         raise ParsingError(
             f"You must provide only one {hub} position",
             ParseContext(
@@ -321,6 +426,14 @@ class MapParser:
             ))
 
     def _add_hub(self, hub_list: List[Hub]) -> None:
+        """Add hub to hub list
+
+        Args:
+            hub_list: List[Hub]
+
+        Raises:
+            ParsingError
+        """
         hub = self._find_hub(self.parameters[0], hub_list)
         if (not len(hub)):
             if ("-" in self.parameters[0]):
@@ -352,10 +465,28 @@ class MapParser:
             ))
 
     def _find_hub(self, hub_name: str, hub_list: List[Hub]) -> List[Hub]:
+        """Find hub in hub_list by name
+
+        Args:
+            hub_name: str
+            hub_list: List[Hub]
+
+        Returns:
+            List[Hub]
+        """
         return ([h for h in hub_list if h.name == hub_name])
 
     def _handle_connection(self, hub_list: List[Hub],
                            conn_list: List[Connection]) -> None:
+        """Handle connection parsing
+
+        Args:
+            hub_list: List[Hub]
+            conn_list: List[Connection]
+
+        Raises:
+            ParsingError
+        """
         if (len(self.parameters) != 1):
             self._raise_parameter_error(
                 "connection only takes one value")
@@ -400,6 +531,14 @@ class MapParser:
             hub.neighboors.append(con)
 
     def _hub_dont_exist_error(self, hub_name: str) -> None:
+        """Raise error when hub dont exists
+
+        Args:
+            hub_name: str
+
+        Raises:
+            ParsingError
+        """
         raise ParsingError(
             f"hub {hub_name} does not exist",
             ParseContext(
@@ -411,6 +550,14 @@ class MapParser:
             ))
 
     def extract(self) -> Map:
+        """Parse a map file
+
+        Returns:
+            Map
+
+        Raises:
+            ParsingError
+        """
         nb_drones: int = -1
         start: Hub | None = None
         end: Hub | None = None

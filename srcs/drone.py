@@ -2,12 +2,24 @@ from typing import List, Tuple
 
 
 class Drone:
+    """Drone class
+
+    Attributes:
+        id: str
+        coord: Tuple[float, float]
+    """
+
     def __init__(self, id: str, coord: Tuple[float, float]) -> None:
         self.id = id
         self.coord = coord
 
     @staticmethod
     def glyph() -> List[List[int]]:
+        """Drone representation
+
+        Returns:
+            List[List[int]]
+        """
         return ([
             [0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0],
             [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],

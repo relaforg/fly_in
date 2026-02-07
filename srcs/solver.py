@@ -4,31 +4,68 @@ from drone import Drone
 
 
 class Solver:
+    """Map solver class."""
+
     def __init__(self, map: Map, paths: Dict[str, List[Tuple[str, int]]],
                  drones: List[Drone]) -> None:
+        """Initialize solver."""
+
         self.map = map
         self.paths = paths
         self.drones = drones
 
     def _get_hub_from_coord(self, coord: Tuple[int, int]) -> Hub | None:
+        """Find a hub by coordinates.
+
+        Args:
+            coord: Hub coordinates.
+
+        Returns:
+            Hub or None.
+        """
         for h in self.map.hubs:
             if (h.coord == coord):
                 return (h)
         return (None)
 
     def _get_hub_from_name(self, hub_name: str) -> Hub | None:
+        """Find a hub by name.
+
+        Args:
+            hub_name: Hub name.
+
+        Returns:
+            Hub or None.
+        """
         for h in self.map.hubs:
             if (h.name == hub_name):
                 return (h)
         return (None)
 
     def _get_conn(self, src: str, dst: str) -> Connection | None:
+        """Get connection between two hubs.
+
+        Args:
+            src: Source hub name.
+            dst: Destination hub name.
+
+        Returns:
+            Connection or None.
+        """
         for c in self.map.conns:
             if (c.src == src and c.dst == dst):
                 return (c)
         return (None)
 
     def _get_hub_cost(self, hub: Hub) -> int:
+        """Get hub cost.
+
+        Args:
+            hub: Hub.
+
+        Returns:
+            int - the hub cost.
+        """
         match hub.zone_type:
             case "normal":
                 return (1)
@@ -41,8 +78,9 @@ class Solver:
             case _:
                 return (10)
 
-    # MANAGE RESTRICTED PISTE considerer la connection comme un hub
     def run(self) -> None:
+        """Run the solver."""
+
         state: Dict[str, List[Drone]] = {h.name: []
                                          for h in self.map.hubs[::-1]}
         state[self.map.start.name] = self.drones

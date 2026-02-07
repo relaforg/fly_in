@@ -38,7 +38,6 @@ if (__name__ == "__main__"):
         exit(1)
 
     try:
-        # print(str(file_path))
         parser = MapParser(str(file_path))
         map = parser.extract()
         paths = Dijkstra(map).run()
