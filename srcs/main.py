@@ -58,6 +58,7 @@ if (__name__ == "__main__"):
             ),
             Connection(
                 hubs=(start, junction),
+                max_link_capacity=1
             ),
             Connection(
                 hubs=(end, path_b),
@@ -74,5 +75,5 @@ if (__name__ == "__main__"):
         print("No path from start to end")
         exit(1)
     solve = Solver(map, paths).run()
-    pprint(solve)
+    # pprint(solve)
     print(len(solve) - 1)

@@ -1,6 +1,7 @@
 from map import Map, Hub
 from typing import Dict, List
 from dataclasses import dataclass
+from utils import Utils
 
 
 @dataclass
@@ -19,15 +20,6 @@ class ReverseCostBFS():
             if (hub in c.hubs):
                 neighboors.append([n for n in c.hubs if n != hub][0])
         return (neighboors)
-
-    def _get_hub_travel_cost(self, hub: Hub) -> int:
-        match hub.zone_type:
-            case "normal" | "priority":
-                return (1)
-            case "restricted":
-                return (2)
-            case _:
-                return (-1)
 
     def _save_path(self, paths: List[Path], path: Path) -> None:
         # If I already have a path from path.src I save the best one
@@ -52,12 +44,12 @@ class ReverseCostBFS():
             path = queue.pop(0)
             for n in self._get_neighboors(path.src):
                 # To prevent path going backward and going onto blocked hub
-                if (n.name in visited or self._get_hub_travel_cost(n) < 0):
+                if (n.name in visited or Utils.get_hub_travel_cost(n) < 0):
                     continue
                 self._save_path(paths[n.name], path)
                 if (path.src.name not in visited):
                     queue.append(
-                        Path(n, path.cost + self._get_hub_travel_cost(n)))
+                        Path(n, path.cost + Utils.get_hub_travel_cost(n)))
             visited.add(path.src.name)
             self._sort_paths(paths)
         return (paths)
