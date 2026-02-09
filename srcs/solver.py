@@ -43,15 +43,16 @@ class Solver:
         while (len(tmp_state.get(self.map.end.name, [])) < self.map.nb_drones):
             for drone in self.drones:
                 for idx, path in enumerate(self.paths[drone.location]):
-                    if (self._is_path_valid(tmp_state, path)):
-                        best_path = self.paths[drone.location][0]
-                        if (idx != 0 and
-                            self._compute_wait_time(tmp_state, best_path)
-                                < path.cost):
-                            continue
-                        tmp_state[drone.location].remove(drone)
-                        drone.location = path.src.name
-                        tmp_state[path.src.name].append(drone)
-                        break
+                    if (not self._is_path_valid(tmp_state, path)):
+                        continue
+                    best_path = self.paths[drone.location][0]
+                    if (idx != 0 and
+                        self._compute_wait_time(tmp_state, best_path)
+                            < path.cost):
+                        continue
+                    tmp_state[drone.location].remove(drone)
+                    drone.location = path.src.name
+                    tmp_state[path.src.name].append(drone)
+                    break
             states.append(deepcopy(tmp_state))
         return (states)

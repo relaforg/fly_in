@@ -14,6 +14,10 @@ class Connection(BaseModel):
     hubs: Tuple[Hub, Hub] = Field(max_length=2, min_length=2)
     max_link_capacity: int = Field(ge=1, default=1)
 
+    @property
+    def name(self) -> str:
+        return f"{self.hubs[0].name}->{self.hubs[1].name}"
+
 
 class Map(BaseModel):
     start: Hub = Field()
