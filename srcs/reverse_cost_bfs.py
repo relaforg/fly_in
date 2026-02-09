@@ -51,7 +51,8 @@ class ReverseCostBFS():
         while (len(queue) > 0):
             path = queue.pop(0)
             for n in self._get_neighboors(path.src):
-                if (n.name in visited):  # To prevent path going backward
+                # To prevent path going backward and going onto blocked hub
+                if (n.name in visited or self._get_hub_travel_cost(n) < 0):
                     continue
                 self._save_path(paths[n.name], path)
                 if (path.src.name not in visited):
