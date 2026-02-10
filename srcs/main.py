@@ -18,7 +18,6 @@ if (__name__ == "__main__"):
     if (not len(paths[map.start.name])):
         print("No path from start to end")
         exit(1)
-    pprint(paths)
     solve = Solver(map, paths).run()
     display = MapDisplay(map, solve)
     display.run()

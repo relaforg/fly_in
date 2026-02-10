@@ -17,12 +17,27 @@ class Solver:
         for i in range(self.map.nb_drones):
             self.drones.append(Drone(f"D{i + 1}", self.map.start.name))
 
+    def _is_not_fully_reserved(self, path: Path, connection: Connection,
+                               reserved: Dict[str, List[Drone]], current_hub: Hub) -> bool:
+        if ("->" not in path.src.name):
+            return (True)
+        for hub in connection.hubs:
+            if (hub.name != current_hub.name):
+                dst = hub
+                break
+        if (len(reserved[dst.name]) < dst.max_drones):
+            reserved[dst.name].append("d")
+            return (True)
+        return (False)
+
     def _is_path_valid(self, connection: Connection, state: State,
-                       path: Path, con_used: Dict[str, List[Drone]]) -> bool:
+                       path: Path, con_used: Dict[str, List[Drone]],
+                       reserved: Dict[str, List[Drone]], current_hub: Hub) -> bool:
         if (path.src.name == self.map.end.name or
                 (len(state[path.src.name]) < path.src.max_drones and
                  len(con_used[connection.name])
-                 < connection.max_link_capacity)):
+                 < connection.max_link_capacity
+                 and self._is_not_fully_reserved(path, connection, reserved, current_hub))):
             return (True)
         return (False)
 
@@ -57,6 +72,8 @@ class Solver:
         states.append(hub_state | con_state)
         states[0][self.map.start.name] = list(self.drones)
         tmp_state: State = deepcopy(states[0])
+        reserved: Dict[str, List[Drone]] = \
+            {h.name: [] for h in self.map.hubs if h.zone_type == "restricted"}
         while (len(tmp_state.get(self.map.end.name, [])) < self.map.nb_drones):
             con_used: Dict[str, List[Drone]] = {
                 c.name: [] for c in self.map.connections}
@@ -67,13 +84,14 @@ class Solver:
                     path = self.paths[drone.location][0]
                     tmp_state[drone.location].remove(drone)
                     drone.location = path.src.name
+                    reserved[path.src.name].pop()
                     tmp_state[path.src.name].append(drone)
                     continue
                 for idx, path in enumerate(self.paths[drone.location]):
                     current_con = self._get_current_connection(
                         current_hub, path)
                     if (not self._is_path_valid(current_con, tmp_state, path,
-                                                con_used)):
+                                                con_used, reserved, current_hub)):
                         continue
                     best_path = self.paths[drone.location][0]
                     if (idx != 0 and
