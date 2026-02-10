@@ -41,7 +41,7 @@ class Solver:
         con_state: State = {c.name: [] for c in self.map.connections}
         states.append(hub_state | con_state)
         states[0][self.map.start.name] = list(self.drones)
-        tmp_state: State = states[0]
+        tmp_state: State = deepcopy(states[0])
         while (len(tmp_state.get(self.map.end.name, [])) < self.map.nb_drones):
             for drone in self.drones:
                 for idx, path in enumerate(self.paths[drone.location]):

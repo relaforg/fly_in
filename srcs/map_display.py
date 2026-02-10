@@ -1,17 +1,14 @@
-from map_parser import Map, Hub, Connection
+from map import Map, Hub, Connection
 from font_monospace import FONT, FONT_W, FONT_H, NO_CHAR
 from mlx import Mlx
-from typing import Any, Tuple, List, TypedDict, Dict
-from drone import Drone
+from typing import Any, Tuple, List, Dict
+from drone import DRONE_GLYPH
 from time import monotonic
 from copy import deepcopy
 from math import ceil
 from random import randint
-
-
-class ConnCoord(TypedDict):
-    coord: tuple[int, int]
-    conn: Connection
+from solver import State
+from utils import Utils
 
 
 class Image:
@@ -56,10 +53,8 @@ class MapDisplay:
         img_height: int
     """
 
-    def __init__(self, map: Map, drones: List[Drone], output_path: str):
+    def __init__(self, map: Map, solve: List[State]):
         self.map = map
-        self.drones_state = [deepcopy(drones)]
-        self._extract_output(output_path)
         self.cell_size = 199
         self.offset = (0, 0)
         self.drag_start: Tuple[int, int] | None = None
@@ -72,10 +67,9 @@ class MapDisplay:
                          self.graph_size[1] * self.cell_size)
         self.last_click = monotonic()
         self.modal: None | Image = None
-        # self.current_hub: Hub | None = None
         self.current_modal_coord: Tuple[int, int] | None = None
         self.step = 0
-        self.conn_coord: List[ConnCoord] = []
+        self.solve: List[State] = solve
 
     def _compute_graph_info(self) -> None:
         """Compute graph properties"""
@@ -86,66 +80,6 @@ class MapDisplay:
         self.graph_size = (max_x - min_x + 1, max_y - min_y + 1)
         self.x_offset = -min(min_x, 0)
         self.y_offset = -min(min_y, 0)
-
-    def _find_hub_by_name(self, hub_name: str) -> Hub | None:
-        """Find hub by name
-
-        Args:
-            hub_name: str
-
-        Returns:
-            Hub if found else None
-        """
-        for h in self.map.hubs:
-            if (h.name == hub_name):
-                return (h)
-        return (None)
-
-    def _extract_output(self, output_path: str) -> None:
-        """Extract output.txt info
-
-        Args:
-            output_path: str
-
-        Raises:
-            FileNotFoundError
-            PermissionError
-        """
-        try:
-            with open(output_path, "r") as file:
-                lines = list(file)
-                nbr_line = len(lines)
-        except FileNotFoundError:
-            raise FileNotFoundError(f"{output_path} does not exists")
-        except PermissionError:
-            raise PermissionError(
-                f"You do not have read permission on {output_path}")
-        hub_coord_by_name = {h.name: h.coord for h in self.map.hubs}
-        for line_idx in range(nbr_line):
-            state = deepcopy(self.drones_state[line_idx])
-            drone_by_id = {d.id: d for d in state}
-            for token in lines[line_idx].split():
-                raw_id, hub_name = token.split("-", 1)
-                drone_id = raw_id[1:]
-                d = drone_by_id.get(drone_id)
-                coord = hub_coord_by_name.get(hub_name)
-                if d is not None and coord is not None:
-                    d.coord = coord
-                elif d is not None:
-                    if "->" not in hub_name:
-                        continue
-                    src_name, dst_name = hub_name.split("->", 1)
-                    src_coord = hub_coord_by_name.get(src_name)
-                    dst_coord = hub_coord_by_name.get(dst_name)
-                    if src_coord is None or dst_coord is None:
-                        continue
-                    mx = (src_coord[0] + dst_coord[0]) / 2
-                    my = (src_coord[1] + dst_coord[1]) / 2
-                    d.coord = (mx, my)
-                else:
-                    continue
-
-            self.drones_state.append(state)
 
     def _graph_to_img_coord(self, graph_x: float,
                             graph_y: float) -> Tuple[int, int]:
@@ -190,6 +124,14 @@ class MapDisplay:
         map_x = (1080 - self.img.width) // 2 + self.offset[0]
         map_y = (720 - self.img.height) // 2 + self.offset[1]
         return (map_x + img_x, map_y + img_y)
+
+    def _get_connection_coord(self, connection: Connection) -> Tuple[int, int]:
+        coord1 = self._graph_to_img_coord(
+            connection.hubs[0].coord[0], connection.hubs[0].coord[1])
+        coord2 = self._graph_to_img_coord(
+            connection.hubs[1].coord[0], connection.hubs[1].coord[1])
+        return ((coord1[0] + coord2[0]) // 2,
+                (coord1[1] + coord2[1]) // 2)
 
     def _color_to_hex(self, color: str) -> int:
         """Convert color to hexa representation
@@ -236,7 +178,6 @@ class MapDisplay:
             case "rainbow":
                 return ((randint(0, 0xFFFFFF) << 8) | 0xFF)
             case "white" | _:
-                print(color)
                 return (0xFFFFFFFF)
 
     def run(self) -> None:
@@ -261,13 +202,12 @@ class MapDisplay:
         """Draw map"""
         self.fill_img(self.img)
         self.put_border(self.img)
-        for h in self.map.hubs:
-            self.put_connections(h)
+        self.put_connections()
         for h in self.map.hubs:
             self.put_hub(h)
         self.put_drones()
         self.put_string(
-            self.img, 5, 5, f"Total nbr of turns: {len(self.drones_state) - 1}"
+            self.img, 5, 5, f"Total nbr of turns: {len(self.solve) - 1}"
             f" - Simulated turn: {self.step}")
 
     def refresh(self) -> None:
@@ -293,7 +233,7 @@ class MapDisplay:
         keycode: which key has been pressed
         """
         if (keycode == 65363):
-            if (self.step < len(self.drones_state) - 1):
+            if (self.step < len(self.solve) - 1):
                 self.step += 1
                 self.draw()
                 self.refresh()
@@ -336,8 +276,8 @@ class MapDisplay:
                         self._graph_to_img_coord(h.coord[0], h.coord[1])
                     self.put_hub_info(h)
                 elif (c is not None):
-                    self.current_modal_coord = c["coord"]
-                    self.put_conn_info(c["conn"])
+                    self.current_modal_coord = self._get_connection_coord(c)
+                    self.put_conn_info(c)
             self.drag_start = (x, y)
             self.last_click = tmp
         elif (button == 3):
@@ -362,7 +302,7 @@ class MapDisplay:
                 return (h)
         return (None)
 
-    def get_conn_double_click(self, x: int, y: int) -> ConnCoord | None:
+    def get_conn_double_click(self, x: int, y: int) -> Connection | None:
         """Check if a connection has been double clicked
 
         Args:
@@ -372,8 +312,8 @@ class MapDisplay:
         Returns:
             Connection if double clicked else None
         """
-        for c in self.conn_coord:
-            x2, y2 = c["coord"]
+        for c in self.map.connections:
+            x2, y2 = self._get_connection_coord(c)
             if (x <= x2 + 9 and x >= x2 - 9 and y <= y2 + 5 and y >= y2 - 5):
                 return (c)
         return (None)
@@ -388,9 +328,8 @@ class MapDisplay:
             self.m.mlx_destroy_image(self.mlx, self.modal.img)
         display: List[str] = [hub.name, "zone_type: " + hub.zone_type,
                               "max_drones: " + str(hub.max_drones)]
-        drones = [d.id for d in self.drones_state[self.step]
-                  if d.coord == hub.coord]
-        display += drones
+        drones = self.solve[self.step][hub.name]
+        display += [d.id for d in drones]
         offset = 1 if len(drones) else 0
         height = (5 + len(drones) + offset) * FONT_H
         width = (len(max(display, key=lambda d: len(d))) + 2) * FONT_W
@@ -415,16 +354,20 @@ class MapDisplay:
         """
         if (self.modal is not None):
             self.m.mlx_destroy_image(self.mlx, self.modal.img)
-        display: List[str] = [f"{conn.src} -> {conn.dst}",
+        display: List[str] = [conn.name,
                               f"max link capacity = {conn.max_link_capacity}"]
-        height = len(display) * FONT_H + 15
+        height = (len(display) + 1) * FONT_H + 15
         width = (len(max(display, key=lambda d: len(d))) + 2) * FONT_W
         self.modal = Image(self.m, self.mlx, width, height)
         self.fill_img(self.modal)
         y = 10
         for i in range(len(display)):
             x = 5
+            if (i == 0):
+                x = width // 2 - len(display[i]) * FONT_W // 2
             self.put_string(self.modal, x, y, display[i])
+            if (i == 0):
+                y += FONT_H
             y += FONT_H
         self.put_border(self.modal)
 
@@ -447,42 +390,39 @@ class MapDisplay:
             x: int
             y: int
         """
-        for dy in range(len(Drone.glyph())):
-            for dx in range(len(Drone.glyph()[dy])):
-                if (Drone.glyph()[dy][dx] == 1):
+        for dy in range(len(DRONE_GLYPH)):
+            for dx in range(len(DRONE_GLYPH[dy])):
+                if (DRONE_GLYPH[dy][dx] == 1):
                     self.put_pixel(self.img, x + dx, y + dy)
 
     def put_drones(self) -> None:
         """Put all drones onto self.img"""
-        nbr: Dict[Tuple[float, float], int] = {}
-        for d in self.drones_state[self.step]:
-            if (nbr.get(d.coord)):
-                nbr[d.coord] += 1
-            else:
-                nbr[d.coord] = 1
-        for (coord, nb_drone) in nbr.items():
-            x, y = self._graph_to_img_coord(coord[0], coord[1])
-            self.put_string(self.img, x + 3, y + 7 + 5, str(nb_drone))
+        for (name, drones) in self.solve[self.step].items():
+            if (len(drones) <= 0):
+                continue
+            hub = Utils.get_hub_by_name(name, self.map.hubs)
+            con = Utils.get_connection_by_name(name, self.map.connections)
+            x, y = (0, 0)
+            if (hub is not None):
+                x, y = self._graph_to_img_coord(hub.coord[0], hub.coord[1])
+            elif (con is not None):
+                x1, y1 = self._graph_to_img_coord(
+                    con.hubs[0].coord[0], con.hubs[0].coord[1])
+                x2, y2 = self._graph_to_img_coord(
+                    con.hubs[1].coord[0], con.hubs[1].coord[1])
+                x, y = ((x1 + x2) // 2, (y1 + y2) // 2)
+            self.put_string(self.img, x + 3, y + 7 + 5, str(len(drones)))
             self.put_drone(x - 15, y + 10)
 
-    def put_connections(self, hub: Hub) -> None:
-        """Put hub connections line
-
-        Args:
-            hub: Hub
-        """
-        for c in hub.neighboors:
-            h = [h for h in self.map.hubs if c.dst == h.name][0]
-            coord_hub = self._graph_to_img_coord(hub.coord[0], hub.coord[1])
-            coord_h = self._graph_to_img_coord(h.coord[0], h.coord[1])
-            self.put_line(self.img, coord_hub, coord_h)
-            mx = (coord_hub[0] + coord_h[0]) // 2
-            my = (coord_hub[1] + coord_h[1]) // 2
-            self.put_rect(mx - 7, my - 3, 15, 7)
-            self.conn_coord.append({
-                "conn": c,
-                "coord": (mx, my)
-            })
+    def put_connections(self) -> None:
+        for c in self.map.connections:
+            coord1 = self._graph_to_img_coord(
+                c.hubs[0].coord[0], c.hubs[0].coord[1])
+            coord2 = self._graph_to_img_coord(
+                c.hubs[1].coord[0], c.hubs[1].coord[1])
+            self.put_line(self.img, coord1, coord2)
+            x, y = ((coord1[0] + coord2[0]) // 2, (coord1[1] + coord2[1]) // 2)
+            self.put_rect(x - 7, y - 3, 15, 7)
 
     def put_square(self, x: int, y: int, size: int,
                    color: int = 0xFFFFFFFF) -> None:

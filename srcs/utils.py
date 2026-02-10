@@ -29,3 +29,11 @@ class Utils:
             if (h.name == hub_name):
                 return (h)
         return (None)
+
+    @staticmethod
+    def get_connection_by_name(con_name: str, connections: List[Connection]) \
+            -> Connection | None:
+        for c in connections:
+            if (c.name == con_name):
+                return (c)
+        return (None)

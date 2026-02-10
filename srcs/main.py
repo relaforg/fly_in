@@ -1,5 +1,5 @@
 # from map_parser import MapParser, ParsingError
-# from map_display import MapDisplay
+from map_display import MapDisplay
 # from drone import Drone
 from reverse_cost_bfs import ReverseCostBFS
 from solver import Solver
@@ -32,13 +32,13 @@ if (__name__ == "__main__"):
     path_b = Hub(
         name="path_b",
         coord=(1, 2),
-        zone_type="normal",
+        zone_type="priority",
         max_drones=1
     )
     junction = Hub(
         name="junction",
         coord=(0, 1),
-        zone_type="normal",
+        zone_type="restricted",
         max_drones=1
     )
     map = Map(
@@ -66,14 +66,10 @@ if (__name__ == "__main__"):
         ]
     )
     paths = ReverseCostBFS(map).run()
-    # for (key, value) in paths.items():
-    #     print(key, end="\t")
-    #     for path in value:
-    #         print(path.src.name, path.cost, end=", ")
-    #     print()
     if (not len(paths[map.start.name])):
         print("No path from start to end")
         exit(1)
     solve = Solver(map, paths).run()
-    # pprint(solve)
-    print(len(solve) - 1)
+    display = MapDisplay(map, solve)
+    display.run()
+    display.destroy()
