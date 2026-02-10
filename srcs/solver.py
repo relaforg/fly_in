@@ -1,6 +1,6 @@
 from typing import Dict, List, TypeAlias
 from reverse_cost_bfs import Path
-from map import Map, Connection
+from map import Map, Connection, Hub
 from drone import Drone
 from copy import deepcopy
 from utils import Utils
@@ -38,6 +38,18 @@ class Solver:
         except IndexError:
             return (sys.maxsize)
 
+    def _get_current_connection(self, current_hub: Hub,
+                                path: Path) -> Connection:
+        current_con = Utils.get_connection(
+            (current_hub, path.src), self.map.connections)
+        if (current_con is not None):
+            return (current_con)
+        current_con = Utils.get_connection_by_name(
+            path.src.name, self.map.connections)
+        if (current_con is not None):
+            return (current_con)
+        exit(5)
+
     def run(self) -> List[State]:
         states: List[State] = []
         hub_state: State = {h.name: [] for h in self.map.hubs}
@@ -52,12 +64,14 @@ class Solver:
                 current_hub = Utils.get_hub_by_name(
                     drone.location, self.map.hubs)
                 if (current_hub is None):
+                    path = self.paths[drone.location][0]
+                    tmp_state[drone.location].remove(drone)
+                    drone.location = path.src.name
+                    tmp_state[path.src.name].append(drone)
                     continue
                 for idx, path in enumerate(self.paths[drone.location]):
-                    current_con = Utils.get_connection(
-                        (current_hub, path.src), self.map.connections)
-                    if (current_con is None):
-                        continue
+                    current_con = self._get_current_connection(
+                        current_hub, path)
                     if (not self._is_path_valid(current_con, tmp_state, path,
                                                 con_used)):
                         continue

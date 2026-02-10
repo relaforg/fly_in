@@ -36,7 +36,10 @@ class ReverseCostBFS():
                     return
                 paths[con.name] = [path]
                 paths[dst.name].append(Path(
-                    Hub(name=con.name, coord=(-1, -1)), path.cost + 1))
+                    Hub(name=con.name,
+                        coord=(-1, -1),
+                        max_drones=con.max_link_capacity
+                        ), path.cost + 1))
             else:
                 paths[dst.name].append(path)
 
