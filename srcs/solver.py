@@ -1,6 +1,6 @@
 from typing import Dict, List, TypeAlias
 from reverse_cost_bfs import Path
-from map import Map
+from map import Map, Connection
 from drone import Drone
 from copy import deepcopy
 from utils import Utils
@@ -17,9 +17,12 @@ class Solver:
         for i in range(self.map.nb_drones):
             self.drones.append(Drone(f"D{i + 1}", self.map.start.name))
 
-    def _is_path_valid(self, state: State, path: Path) -> bool:
+    def _is_path_valid(self, connection: Connection, state: State,
+                       path: Path, con_used: Dict[str, List[Drone]]) -> bool:
         if (path.src.name == self.map.end.name or
-                len(state[path.src.name]) < path.src.max_drones):
+                (len(state[path.src.name]) < path.src.max_drones and
+                 len(con_used[connection.name])
+                 < connection.max_link_capacity)):
             return (True)
         return (False)
 
@@ -43,9 +46,20 @@ class Solver:
         states[0][self.map.start.name] = list(self.drones)
         tmp_state: State = deepcopy(states[0])
         while (len(tmp_state.get(self.map.end.name, [])) < self.map.nb_drones):
+            con_used: Dict[str, List[Drone]] = {
+                c.name: [] for c in self.map.connections}
             for drone in self.drones:
+                current_hub = Utils.get_hub_by_name(
+                    drone.location, self.map.hubs)
+                if (current_hub is None):
+                    continue
                 for idx, path in enumerate(self.paths[drone.location]):
-                    if (not self._is_path_valid(tmp_state, path)):
+                    current_con = Utils.get_connection(
+                        (current_hub, path.src), self.map.connections)
+                    if (current_con is None):
+                        continue
+                    if (not self._is_path_valid(current_con, tmp_state, path,
+                                                con_used)):
                         continue
                     best_path = self.paths[drone.location][0]
                     if (idx != 0 and
@@ -55,6 +69,7 @@ class Solver:
                     tmp_state[drone.location].remove(drone)
                     drone.location = path.src.name
                     tmp_state[path.src.name].append(drone)
+                    con_used[current_con.name].append(drone)
                     break
             states.append(deepcopy(tmp_state))
         return (states)

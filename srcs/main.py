@@ -11,60 +11,6 @@ from map import Hub, Connection, Map
 from utils import ParsingError
 
 if (__name__ == "__main__"):
-    # start = Hub(
-    #     name="start",
-    #     coord=(-1, 1),
-    #     zone_type="normal",
-    #     max_drones=3
-    # )
-    # end = Hub(
-    #     name="goal",
-    #     coord=(2, 1),
-    #     zone_type="normal",
-    #     max_drones=1
-    # )
-    # path_a = Hub(
-    #     name="path_a",
-    #     coord=(1, 0),
-    #     zone_type="normal",
-    #     max_drones=1
-    # )
-    # path_b = Hub(
-    #     name="path_b",
-    #     coord=(1, 2),
-    #     zone_type="priority",
-    #     max_drones=1
-    # )
-    # junction = Hub(
-    #     name="junction",
-    #     coord=(0, 1),
-    #     zone_type="restricted",
-    #     max_drones=1
-    # )
-    # map = Map(
-    #     start=start,
-    #     end=end,
-    #     nb_drones=3,
-    #     hubs=[start, end, path_a, path_b, junction],
-    #     connections=[
-    #         Connection(
-    #             hubs=(junction, path_a),
-    #         ),
-    #         Connection(
-    #             hubs=(end, path_a),
-    #         ),
-    #         Connection(
-    #             hubs=(junction, path_b),
-    #         ),
-    #         Connection(
-    #             hubs=(start, junction),
-    #             max_link_capacity=1
-    #         ),
-    #         Connection(
-    #             hubs=(end, path_b),
-    #         )
-    #     ]
-    # )
     try:
         map = MapParser("maps/easy/02_simple_fork.txt").run()
         print(map)
