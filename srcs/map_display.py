@@ -1,10 +1,9 @@
 from map import Map, Hub, Connection
 from font_monospace import FONT, FONT_W, FONT_H, NO_CHAR
 from mlx import Mlx
-from typing import Any, Tuple, List, Dict
+from typing import Any, Tuple, List
 from drone import DRONE_GLYPH
 from time import monotonic
-from copy import deepcopy
 from math import ceil
 from random import randint
 from solver import State

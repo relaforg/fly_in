@@ -1,4 +1,4 @@
-from typing import Iterator, Tuple, List, Dict, NoReturn
+from typing import Iterator, List, Dict, NoReturn
 from pydantic import ValidationError
 from map import Hub, Connection, Map
 from utils import ParsingErrorContext, ParsingError, Utils
@@ -96,7 +96,7 @@ class MapParser:
                 length=len(ctx.line) - offset
             ))
 
-    def _get_parsing_context(self, line: str):
+    def _get_parsing_context(self, line: str) -> ParsingContext:
         ctx = ParsingContext()
         ctx.line = line
         ctx.line_no = self.line_no
@@ -197,7 +197,7 @@ class MapParser:
             else:
                 self._raise_metadata(ctx, f"Unknown {key} attribute")
 
-    def _validate_ctx(self, ctx: ParsingContext):
+    def _validate_ctx(self, ctx: ParsingContext) -> None:
         if (ctx.key in ["start_hub", "end_hub", "hub"]):
             self._validate_hub_ctx(ctx)
         elif (ctx.key == "nb_drones"):

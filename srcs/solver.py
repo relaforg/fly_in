@@ -45,7 +45,7 @@ class Solver:
             return (True)
         return (False)
 
-    def _compute_wait_time(self, state: State, best_path: Path):
+    def _compute_wait_time(self, state: State, best_path: Path) -> int:
         wait_cost = best_path.cost + len(state[best_path.src.name])
         try:
             next = self.paths[best_path.src.name][0].src

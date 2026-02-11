@@ -8,7 +8,7 @@ from utils import ParsingError
 from sys import argv
 
 
-def show_menu():
+def show_menu() -> str:
     try:
         p = Path("maps")
         while (True):
@@ -32,7 +32,7 @@ def show_menu():
             if (obj.is_dir()):
                 p = obj.resolve()
             elif (obj.is_file()):
-                return (obj.resolve())
+                return (str(obj.resolve()))
     except FileNotFoundError:
         print("Maps folder not found")
         exit(1)
