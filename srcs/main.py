@@ -9,6 +9,11 @@ from sys import argv
 
 
 def show_menu() -> str:
+    """Show map selection menu
+
+    Returns:
+        selected file path
+    """
     try:
         p = Path("maps")
         while (True):

@@ -10,6 +10,14 @@ State: TypeAlias = Dict[str, List[Drone]]
 
 
 class Solver:
+    """ Solving class
+
+    Attributes:
+        map: Map
+        paths: Dict[str, List[Path]]
+        drones: List[Drone]
+    """
+
     def __init__(self, map: Map, paths: Dict[str, List[Path]]) -> None:
         self.map = map
         self.paths = paths
@@ -20,6 +28,17 @@ class Solver:
     def _is_not_fully_reserved(self, path: Path, connection: Connection,
                                reserved: Dict[str, List[int]],
                                current_hub: Hub) -> bool:
+        """Check if a restricted hub is free
+
+        Args:
+            path: Path
+            connection: Connection
+            reserved: Dict[str, List[int]]
+            current_hub: Hub
+
+        Returns:
+            bool
+        """
         # Test if drone is going toward a a restricted area
         if ("->" not in path.src.name):
             return (True)
@@ -36,6 +55,19 @@ class Solver:
                        path: Path, con_used: Dict[str, List[Drone]],
                        reserved: Dict[str, List[int]],
                        current_hub: Hub) -> bool:
+        """Check a path is good to take
+
+        Args:
+            connection: Connection
+            state: State
+            path: Path
+            con_used: Dict[str, List[Drone]]
+            reserved: Dict[str, List[int]]
+            current_hub: Hub
+
+        Returns:
+            bool
+        """
         if (path.src.name == self.map.end.name or
                 (len(state[path.src.name]) < path.src.max_drones and
                  len(con_used[connection.name])
@@ -46,6 +78,15 @@ class Solver:
         return (False)
 
     def _compute_wait_time(self, state: State, best_path: Path) -> int:
+        """Compute the cost of waiting
+
+        Args:
+            state: State
+            best_path: Path
+
+        Returns:
+            int
+        """
         wait_cost = best_path.cost + len(state[best_path.src.name])
         try:
             next = self.paths[best_path.src.name][0].src
@@ -59,6 +100,15 @@ class Solver:
 
     def _get_current_connection(self, current_hub: Hub,
                                 path: Path) -> Connection:
+        """Get the current connection
+
+        Args:
+            current_hub: Hub
+            path: Path
+
+        Returns:
+            Connection
+        """
         current_con = Utils.get_connection(
             (current_hub, path.src), self.map.connections)
         if (current_con is not None):
@@ -71,12 +121,30 @@ class Solver:
 
     def _move_drone(self, tmp_state: State, path: Path, drone: Drone,
                     con_used: Dict[str, List[Drone]], conn_name: str) -> None:
+        """Move the drone to path.src
+
+        Args:
+            tmp_state: State
+            path: Path
+            drone: Drone
+            con_used: Dict[str, List[Drone]]
+            conn_name: str
+        """
         tmp_state[drone.location].remove(drone)
         drone.location = path.src.name
         tmp_state[path.src.name].append(drone)
         con_used[conn_name].append(drone)
 
     def _find_previous_location(self, state: State, drone_id: str) -> str:
+        """Find drone location (hub name) in state
+
+        Args:
+            state: State
+            drone_id: str
+
+        Returns:
+            str
+        """
         for (hub_name, drones) in state.items():
             for d in drones:
                 if (d.id == drone_id):
@@ -84,6 +152,11 @@ class Solver:
         return ("")
 
     def _export_output(self, states: List[State]) -> None:
+        """Export the solution in the output.txt file
+
+        Args:
+            states: List[State]
+        """
         try:
             with open("output.txt", "w") as file:
                 for i in range(1, len(states)):
@@ -99,6 +172,11 @@ class Solver:
             print(e)
 
     def run(self) -> List[State]:
+        """Find the shortest solution
+
+        Returns:
+            List[State]
+        """
         states: List[State] = []
         hub_state: State = {h.name: [] for h in self.map.hubs}
         con_state: State = {c.name: [] for c in self.map.connections}

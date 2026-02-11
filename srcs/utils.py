@@ -5,8 +5,18 @@ from dataclasses import dataclass
 
 
 class Utils:
+    """Utility class"""
+
     @staticmethod
     def get_hub_travel_cost(hub: Hub) -> int:
+        """Get hub travel cost
+
+        Args:
+            hub: Hub
+
+        Returns:
+            int
+        """
         match hub.zone_type:
             case "normal" | "priority":
                 return (1)
@@ -18,6 +28,15 @@ class Utils:
     @staticmethod
     def get_connection(couple: Tuple[Hub, Hub],
                        connections: List[Connection]) -> Connection | None:
+        """Find the connection connecting the couple's hubs
+
+        Args:
+            couple: Tuple[Hub, Hub]
+            connections: List[Connection]
+
+        Returns:
+            Connection | None
+        """
         for c in connections:
             if (Counter((h.name for h in couple))
                     == Counter((h.name for h in c.hubs))):
@@ -26,6 +45,15 @@ class Utils:
 
     @staticmethod
     def get_hub_by_name(hub_name: str, hubs: List[Hub]) -> Hub | None:
+        """Find the hub with the name hub_name
+
+        Args:
+            hub_name: str
+            hubs: List[Hub]
+
+        Returns:
+            Hub | None
+        """
         for h in hubs:
             if (h.name == hub_name):
                 return (h)
@@ -34,6 +62,15 @@ class Utils:
     @staticmethod
     def get_connection_by_name(con_name: str, connections: List[Connection]) \
             -> Connection | None:
+        """Find the connection with the name con_name
+
+        Args:
+            con_name: str
+            connections: List[Connection]
+
+        Returns:
+            Connection | None
+        """
         for c in connections:
             if (c.name == con_name):
                 return (c)
@@ -59,6 +96,16 @@ class Utils:
 
 @dataclass
 class ParsingErrorContext:
+    """Error context
+
+    Attributes:
+        file: str
+        line_no: int
+        line: str
+        col: int
+        length: int
+        hint: str
+    """
     file: Optional[str] = None
     line_no: Optional[int] = None
     line: Optional[str] = None
@@ -93,6 +140,15 @@ class ParsingError(Exception):
             str
         """
         def c(text: str, code: str) -> str:
+            """Aplly color code to str
+
+            Args:
+                text: str
+                code: str
+
+            Returns:
+                str
+            """
             return f"\x1b[{code}m{text}\x1b[0m"
 
         BOLD_RED = "31;1"

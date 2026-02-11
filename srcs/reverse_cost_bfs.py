@@ -11,10 +11,24 @@ class Path:
 
 
 class ReverseCostBFS():
+    """Graph path mapping class
+
+    Attributes:
+        map: Map
+    """
+
     def __init__(self, map: Map) -> None:
         self.map = map
 
     def _get_neighboors(self, hub: Hub) -> List[Hub]:
+        """Get all neighbooring hub
+
+        Args:
+            hub: Hub
+
+        Returns:
+            List[Hub]
+        """
         neighboors: List[Hub] = []
         for c in self.map.connections:
             if (hub in c.hubs):
@@ -23,6 +37,13 @@ class ReverseCostBFS():
 
     def _save_path(self, dst: Hub, paths: Dict[str, List[Path]],
                    path: Path) -> None:
+        """Save the better path
+
+        Args:
+            dst: Hub
+            paths: Dict[str, list[Path]]
+            path: Path
+        """
         # If I already have a path from path.src I save the best one
         if (path.src.name in [p.src.name for p in paths[dst.name]]):
             for p in paths[dst.name]:
@@ -44,11 +65,21 @@ class ReverseCostBFS():
                 paths[dst.name].append(path)
 
     def _sort_paths(self, paths: Dict[str, List[Path]]) -> None:
+        """Sort path by cost and then priority
+
+        Args:
+            paths: Dict[str, List[Path]]
+        """
         for path_list in paths.values():
             path_list.sort(key=lambda p: (
                 p.cost, p.src.zone_type != "priority"))
 
     def run(self) -> Dict[str, List[Path]]:
+        """Run the graph mapping algorithm
+
+        Returns:
+            Dict[str, List[Path]]
+        """
         paths: Dict[str, List[Path]] = {n.name: [] for n in self.map.hubs}
         queue: List[Path] = [Path(self.map.end, 0)]
         visited = set()
