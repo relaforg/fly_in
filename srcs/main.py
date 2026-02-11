@@ -10,7 +10,7 @@ from pprint import pprint
 
 if (__name__ == "__main__"):
     try:
-        map = MapParser("maps/test3.txt").run()
+        map = MapParser("maps/test2.txt").run()
         # print(map)
     except ParsingError as e:
         print(e)
