@@ -20,6 +20,7 @@ class Solver:
     def _is_not_fully_reserved(self, path: Path, connection: Connection,
                                reserved: Dict[str, List[int]],
                                current_hub: Hub) -> bool:
+        # Test if drone is going toward a a restricted area
         if ("->" not in path.src.name):
             return (True)
         for hub in connection.hubs:
@@ -68,6 +69,13 @@ class Solver:
             return (current_con)
         exit(5)
 
+    def _move_drone(self, tmp_state: State, path: Path, drone: Drone,
+                    con_used: Dict[str, List[Drone]], conn_name: str) -> None:
+        tmp_state[drone.location].remove(drone)
+        drone.location = path.src.name
+        tmp_state[path.src.name].append(drone)
+        con_used[conn_name].append(drone)
+
     def run(self) -> List[State]:
         states: List[State] = []
         hub_state: State = {h.name: [] for h in self.map.hubs}
@@ -88,10 +96,9 @@ class Solver:
                 # Drone is on a connection
                 if (current_hub is None):
                     path = self.paths[drone.location][0]
-                    tmp_state[drone.location].remove(drone)
-                    drone.location = path.src.name
                     reserved[path.src.name].pop()
-                    tmp_state[path.src.name].append(drone)
+                    self._move_drone(tmp_state, path, drone,
+                                     con_used, drone.location)
                     continue
 
                 for idx, path in enumerate(self.paths[drone.location]):
@@ -106,10 +113,8 @@ class Solver:
                         self._compute_wait_time(tmp_state, best_path)
                             < path.cost):
                         continue
-                    tmp_state[drone.location].remove(drone)
-                    drone.location = path.src.name
-                    tmp_state[path.src.name].append(drone)
-                    con_used[current_con.name].append(drone)
+                    self._move_drone(tmp_state, path, drone,
+                                     con_used, current_con.name)
                     break
             states.append(deepcopy(tmp_state))
         return (states)

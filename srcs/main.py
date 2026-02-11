@@ -4,13 +4,12 @@ from reverse_cost_bfs import ReverseCostBFS
 from solver import Solver
 # import questionary
 # from pathlib import Path
-from map import Hub, Connection
 from utils import ParsingError
 from pprint import pprint
 
 if (__name__ == "__main__"):
     try:
-        map = MapParser("maps/test2.txt").run()
+        map = MapParser("maps/challenger/01_the_impossible_dream.txt").run()
         # print(map)
     except ParsingError as e:
         print(e)
