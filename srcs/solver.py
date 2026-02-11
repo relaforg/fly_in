@@ -76,6 +76,28 @@ class Solver:
         tmp_state[path.src.name].append(drone)
         con_used[conn_name].append(drone)
 
+    def _find_previous_location(self, state: State, drone_id: str) -> str:
+        for (hub_name, drones) in state.items():
+            for d in drones:
+                if (d.id == drone_id):
+                    return (hub_name)
+        return ("")
+
+    def _export_output(self, states: List[State]) -> None:
+        try:
+            with open("output.txt", "w") as file:
+                for i in range(1, len(states)):
+                    turn = ""
+                    for (hub_name, drones) in states[i].items():
+                        for d in drones:
+                            if (hub_name != self._find_previous_location(
+                                    states[i - 1], d.id)):
+                                turn += f"{d.id}-{hub_name} "
+                    file.write(turn.strip() + "\n")
+
+        except Exception as e:
+            print(e)
+
     def run(self) -> List[State]:
         states: List[State] = []
         hub_state: State = {h.name: [] for h in self.map.hubs}
@@ -83,8 +105,8 @@ class Solver:
         states.append(hub_state | con_state)
         states[0][self.map.start.name] = list(self.drones)
         tmp_state: State = deepcopy(states[0])
-        reserved: Dict[str, List[int]] = \
-            {h.name: [] for h in self.map.hubs if h.zone_type == "restricted"}
+        reserved: Dict[str, List[int]] = {
+            h.name: [] for h in self.map.hubs if h.zone_type == "restricted"}
         while (len(tmp_state.get(self.map.end.name, [])) < self.map.nb_drones):
             con_used: Dict[str, List[Drone]] = {
                 c.name: [] for c in self.map.connections}
@@ -117,4 +139,5 @@ class Solver:
                                      con_used, current_con.name)
                     break
             states.append(deepcopy(tmp_state))
+        self._export_output(states)
         return (states)

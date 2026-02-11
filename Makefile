@@ -3,7 +3,7 @@ MYPY_FLAGS = --warn-return-any \
 			 --check-untyped-defs
 
 run:
-	@python3 srcs/main.py
+	@python3 srcs/main.py $(ARGS)
 
 install:
 	@pip install -r requirements.txt
