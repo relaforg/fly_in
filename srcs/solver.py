@@ -133,6 +133,11 @@ class Solver:
                                                 current_hub)):
                         continue
                     best_path = self.paths[drone.location][0]
+                    if (idx < len(self.paths[drone.location]) - 1 and
+                            self._compute_wait_time(tmp_state, path) >
+                            self._compute_wait_time(
+                            tmp_state, self.paths[drone.location][idx + 1])):
+                        continue
                     if (idx != 0 and
                         self._compute_wait_time(tmp_state, best_path)
                             < path.cost):
