@@ -83,7 +83,6 @@ class Solver:
                 if (hub.name != drone.location):
                     dst = hub
                     break
-            print(dst.name)
             reserved[dst.name] += 1
 
         tmp_state[drone.location].remove(drone)
@@ -135,7 +134,6 @@ class Solver:
                     # Il n'y forcement qu'un chemin qui part d'une connection
                     # vers un restricted
                     path = self.paths[drone.location][0]
-                    print(drone.location, path.src.name)
                     if (reserved[path.src.name] <= 0):
                         exit(12)
                     reserved[path.src.name] -= 1
