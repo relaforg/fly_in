@@ -18,7 +18,7 @@ class Solver:
             self.drones.append(Drone(f"D{i + 1}", self.map.start.name))
 
     def _is_not_fully_reserved(self, path: Path, connection: Connection,
-                               reserved: Dict[str, List[int]],
+                               reserved: Dict[str, int],
                                current_hub: Hub) -> bool:
         # Test if drone is going toward a a restricted area
         if ("->" not in path.src.name):
@@ -27,14 +27,14 @@ class Solver:
             if (hub.name != current_hub.name):
                 dst = hub
                 break
-        if (len(reserved[dst.name]) < dst.max_drones):
-            reserved[dst.name].append(0)
+        if (reserved[dst.name] < dst.max_drones):
+            # reserved[dst.name].append(0)
             return (True)
         return (False)
 
     def _is_path_valid(self, connection: Connection, state: State,
                        path: Path, con_used: Dict[str, List[Drone]],
-                       reserved: Dict[str, List[int]],
+                       reserved: Dict[str, int],
                        current_hub: Hub) -> bool:
         if (path.src.name == self.map.end.name or
                 (len(state[path.src.name]) < path.src.max_drones and
@@ -72,7 +72,20 @@ class Solver:
         exit(5)
 
     def _move_drone(self, tmp_state: State, path: Path, drone: Drone,
-                    con_used: Dict[str, List[Drone]], conn_name: str) -> None:
+                    con_used: Dict[str, List[Drone]], conn_name: str,
+                    reserved: Dict[str, int]) -> None:
+        if ("->" in path.src.name):
+            connection = Utils.get_connection_by_name(
+                path.src.name, self.map.connections)
+            if (connection is None):
+                exit(10)
+            for hub in connection.hubs:
+                if (hub.name != drone.location):
+                    dst = hub
+                    break
+            print(dst.name)
+            reserved[dst.name] += 1
+
         tmp_state[drone.location].remove(drone)
         drone.location = path.src.name
         tmp_state[path.src.name].append(drone)
@@ -107,8 +120,8 @@ class Solver:
         states.append(hub_state | con_state)
         states[0][self.map.start.name] = list(self.drones)
         tmp_state: State = deepcopy(states[0])
-        reserved: Dict[str, List[int]] = {
-            h.name: [] for h in self.map.hubs if h.zone_type == "restricted"}
+        reserved: Dict[str, int] = {
+            h.name: 0 for h in self.map.hubs if h.zone_type == "restricted"}
         while (len(tmp_state.get(self.map.end.name, [])) < self.map.nb_drones):
             con_used: Dict[str, List[Drone]] = {
                 c.name: [] for c in self.map.connections}
@@ -122,9 +135,12 @@ class Solver:
                     # Il n'y forcement qu'un chemin qui part d'une connection
                     # vers un restricted
                     path = self.paths[drone.location][0]
-                    reserved[path.src.name].pop()
+                    print(drone.location, path.src.name)
+                    if (reserved[path.src.name] <= 0):
+                        exit(12)
+                    reserved[path.src.name] -= 1
                     self._move_drone(tmp_state, path, drone,
-                                     con_used, drone.location)
+                                     con_used, drone.location, reserved)
                     continue
 
                 for idx, path in enumerate(self.paths[drone.location]):
@@ -145,7 +161,7 @@ class Solver:
                             < path.cost):
                         continue
                     self._move_drone(tmp_state, path, drone,
-                                     con_used, current_con.name)
+                                     con_used, current_con.name, reserved)
                     break
             states.append(deepcopy(tmp_state))
         self._export_output(states)
